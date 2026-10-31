@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AI 大模型能力对比 · 2026.10 精密基准台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #06080f;
+      --card-bg: rgba(13, 18, 30, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      background-image:
+        radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.11), transparent 38%),
+        radial-gradient(circle at 88% 0%, rgba(168, 85, 247, 0.10), transparent 38%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.06), transparent 45%);
+      color: #f8fafc;
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .glass-panel {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+    }
+    .glass-empty {
+      background: rgba(11, 15, 25, 0.45);
+      border: 1.5px dashed rgba(255, 255, 255, 0.13);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-empty:hover {
+      border-color: rgba(56, 189, 248, 0.48);
+      background: rgba(15, 23, 42, 0.68);
+    }
+    @keyframes rowSlideIn {
+      0% { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+      100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+    .anim-row-1 { animation: rowSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both; }
+    .anim-row-2 { animation: rowSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+    .anim-row-3 { animation: rowSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+    .anim-row-4 { animation: rowSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) 0.11s both; }
+    .anim-row-5 { animation: rowSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both; }
+
+    .bar-fill {
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.28); border-radius: 9999px; }
+
+    .lead-pill {
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(234, 88, 12, 0.15));
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      color: #fde68a;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.18);
+    }
+
+    /* 分档吸附滑块样式（28-30px 大圆点、10-12px 粗轨道、>=44px 触控区、支持键盘方向键与拖动气泡） */
+    .effort-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 44px;
+      min-height: 44px;
+      background: transparent;
+      outline: none;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      position: relative;
+      z-index: 20;
+      touch-action: pan-x;
+    }
+    .effort-range:disabled {
+      cursor: not-allowed;
+    }
+    .effort-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 70%, #cbd5e1 100%);
+      border: 3.5px solid var(--thumb-color, #38bdf8);
+      box-shadow: 0 0 14px var(--thumb-glow, rgba(56, 189, 248, 0.8)), 0 3px 8px rgba(0, 0, 0, 0.75);
+      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+    }
+    @media (min-width: 640px) {
+      .effort-range::-webkit-slider-thumb {
+        width: 30px;
+        height: 30px;
+      }
+    }
+    .effort-range:not(:disabled):active::-webkit-slider-thumb,
+    .effort-range:not(:disabled):hover::-webkit-slider-thumb,
+    .effort-range:not(:disabled):focus-visible::-webkit-slider-thumb {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px var(--thumb-glow, rgba(56, 189, 248, 1)), 0 4px 10px rgba(0, 0, 0, 0.85), 0 0 0 3px rgba(255, 255, 255, 0.22);
+    }
+    .effort-range:disabled::-webkit-slider-thumb {
+      background: #475569;
+      border-color: #64748b;
+      box-shadow: none;
+      width: 22px;
+      height: 22px;
+    }
+    .effort-range::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 70%, #cbd5e1 100%);
+      border: 3.5px solid var(--thumb-color, #38bdf8);
+      box-shadow: 0 0 14px var(--thumb-glow, rgba(56, 189, 248, 0.8)), 0 3px 8px rgba(0, 0, 0, 0.75);
+      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+    }
+    @media (min-width: 640px) {
+      .effort-range::-moz-range-thumb {
+        width: 30px;
+        height: 30px;
+      }
+    }
+    .effort-range:not(:disabled):active::-moz-range-thumb,
+    .effort-range:not(:disabled):hover::-moz-range-thumb,
+    .effort-range:not(:disabled):focus-visible::-moz-range-thumb {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px var(--thumb-glow, rgba(56, 189, 248, 1)), 0 4px 10px rgba(0, 0, 0, 0.85), 0 0 0 3px rgba(255, 255, 255, 0.22);
+    }
+    .effort-range:disabled::-moz-range-thumb {
+      background: #475569;
+      border-color: #64748b;
+      box-shadow: none;
+      width: 22px;
+      height: 22px;
+    }
+    @keyframes sheetSlideUp {
+      0% { transform: translateY(100%); opacity: 0.6; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .sheet-panel {
+      animation: sheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+  </style>
+</head>
+<body class="flex flex-col justify-between">
+
+  <!-- 顶部导航与模式/基准控制栏 -->
+  <header class="w-full max-w-6xl mx-auto px-2.5 sm:px-6 pt-2 sm:pt-3.5 pb-1 shrink-0 z-20">
+    <!-- 第一行：品牌标题 + 分段榜单切换 + 重置 -->
+    <div class="flex items-center justify-between gap-1.5">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-2 h-5 sm:h-6 rounded-full bg-gradient-to-b from-sky-400 via-indigo-500 to-emerald-400 shrink-0 shadow-[0_0_12px_rgba(56,189,248,0.6)]"></div>
+        <h1 class="text-[15px] sm:text-xl font-extrabold tracking-tight text-white truncate">AI 大模型能力对比</h1>
+        <span id="modelCountBadge" class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono-num bg-white/[0.05] text-slate-300 border border-white/10">9 大厂商 · 76 款现役模型</span>
+      </div>
+
+      <!-- 顶部分段切换：推理与通用 / 图片生成 -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span id="desktopSlotBadge" class="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono-num font-bold bg-sky-500/15 text-sky-300 border border-sky-400/30">槽位 2/3</span>
+        <div class="inline-flex p-0.5 rounded-xl bg-slate-900/90 border border-white/10 shadow-inner">
+          <button id="tabReasoning" onclick="switchBoard('reasoning')" class="px-2.5 sm:px-3.5 py-1 rounded-[9px] text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 bg-sky-500/20 text-sky-300 border border-sky-400/30 shadow-sm">
+            <span>🧠</span><span>推理与通用</span>
+          </button>
+          <button id="tabImage" onclick="switchBoard('image')" class="px-2.5 sm:px-3.5 py-1 rounded-[9px] text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 text-slate-400 hover:text-slate-200 border border-transparent">
+            <span>🎨</span><span>图片生成</span>
+          </button>
+        </div>
+
+        <button onclick="resetSelection()" title="重置选择" class="px-2 sm:px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-[11px] sm:text-xs text-slate-300 hover:text-white transition flex items-center gap-1 shrink-0">
+          <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="hidden sm:inline">重置选择</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 第二行：评测来源下拉 + 快捷预设组合 + 手机端第3槽位切换 -->
+    <div class="flex items-center justify-between gap-2 mt-1">
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+        <!-- 评测基准来源下拉 -->
+        <div class="relative shrink-0 flex items-center">
+          <span class="text-[10px] sm:text-[11px] text-slate-400 mr-1 hidden sm:inline">评测来源:</span>
+          <select id="benchmarkSelect" onchange="changeBenchmarkSource(this.value)" class="appearance-none bg-slate-900/90 hover:bg-slate-800/90 text-sky-300 border border-sky-500/30 rounded-lg pl-2 pr-5 py-0.5 text-[10px] sm:text-[11px] font-medium focus:outline-none cursor-pointer">
+          </select>
+          <svg class="w-2.5 h-2.5 text-sky-400 pointer-events-none -ml-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+
+        <!-- 热门预设胶囊 -->
+        <div id="presetBar" class="flex items-center gap-1 shrink-0"></div>
+      </div>
+
+      <!-- 手机端第3模型控制区（仅 <1024px 显示，槽位提示 + 醒目右栏②/③切换） -->
+      <div id="mobileSlotControl" class="flex lg:hidden items-center gap-1.5 shrink-0"></div>
+    </div>
+  </header>
+
+  <!-- 主对比舞台：手机端固定2栏一屏，电脑端固定3栏一屏 -->
+  <main class="flex-1 w-full max-w-6xl mx-auto px-2 sm:px-6 py-1 sm:py-1.5 min-h-0 flex flex-col justify-center overflow-hidden">
+    <div id="compareGrid" class="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 w-full h-full max-h-[690px] min-h-0">
+      <!-- JS 动态渲染槽位 -->
+    </div>
+  </main>
+
+  <!-- 底部数据来源与日期说明（随当前榜单自动切换） -->
+  <footer class="w-full max-w-6xl mx-auto px-3 sm:px-6 pb-1 sm:pb-2 pt-0.5 shrink-0 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400/80 border-t border-white/[0.05]">
+    <div id="footerSourceText" class="truncate">
+      数据来源：LMArena (arena.ai)、LiveBench、Artificial Analysis v5.0、GPQA、SWE-bench、ARC-AGI-2 · 截至 2026年10月31日
+    </div>
+    <div class="flex items-center gap-2 shrink-0 ml-2">
+      <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>实测</span>
+      <span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>估计</span>
+      <span id="footerTipText" class="hidden sm:inline text-slate-500">| 拖动或点击推理强度档位可实时重算得分与领先方</span>
+    </div>
+  </footer>
+
+  <!-- 弹出式模型选择器面板（手机端底部弹出 Bottom Sheet + 电脑端加高大面板 + 厂商横向滑动提示） -->
+  <div id="pickerModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/75 backdrop-blur-md p-0 sm:p-3 transition-opacity">
+    <div class="sheet-panel w-full sm:max-w-3xl bg-[#0b101d] border-t sm:border border-white/15 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col h-[90dvh] max-h-[90dvh] sm:h-[90vh] sm:max-h-[90vh] overflow-hidden">
+      <!-- 手机端底部弹出把手 -->
+      <div class="w-11 h-1.5 rounded-full bg-white/20 mx-auto mt-2 mb-0.5 sm:hidden shrink-0"></div>
+
+      <!-- 弹窗头部 -->
+      <div class="px-4 py-2 sm:py-2.5 border-b border-white/10 flex items-center justify-between shrink-0">
+        <div class="min-w-0 pr-2">
+          <h3 id="modalTitle" class="text-sm sm:text-base font-bold text-white truncate">选择对比模型</h3>
+          <p id="modalSubtitle" class="text-[11px] text-slate-400 mt-0.5 truncate">覆盖 9 大厂商截至 2026.10.31 全系现役旗舰、中端、轻量、推理、编程与开源模型</p>
+        </div>
+        <button onclick="closePicker()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-slate-200 text-sm shrink-0">✕</button>
+      </div>
+
+      <!-- 搜索框 -->
+      <div class="px-3.5 pt-2 pb-1.5 shrink-0">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z"/></svg>
+          <input id="pickerSearchInput" type="text" oninput="handlePickerSearch(this.value)" placeholder="按模型名称优先搜索（如 opus / carbon / sol / k3.1 / seedream / 开源）..." class="w-full bg-slate-900/95 border border-white/15 focus:border-sky-400/60 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none" />
+          <button id="clearSearchBtn" onclick="clearPickerSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/10 text-slate-300 hover:text-white text-xs flex items-center justify-center">✕</button>
+        </div>
+      </div>
+
+      <!-- 九大厂商筛选横向胶囊（带左右滑动渐变遮罩与滑动提示按钮，绝不截断） -->
+      <div class="relative border-b border-white/10 shrink-0 flex items-center">
+        <button id="vendorScrollLeftBtn" type="button" onclick="scrollVendorBar(-180)" class="hidden absolute left-0 z-20 h-full px-2 bg-gradient-to-r from-[#0b101d] via-[#0b101d]/95 to-transparent text-sky-300 hover:text-white items-center justify-center text-xs font-bold">
+          ‹
+        </button>
+        <div id="vendorFilterBar" onscroll="updateVendorScrollHints()" class="px-3.5 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth flex-nowrap w-full pr-16" style="touch-action: pan-x;"></div>
+        <button id="vendorScrollRightBtn" type="button" onclick="scrollVendorBar(180)" class="flex absolute right-0 z-20 h-full pl-5 pr-2.5 bg-gradient-to-l from-[#0b101d] via-[#0b101d]/95 to-transparent text-sky-300 hover:text-white items-center gap-0.5 text-[11px] font-semibold whitespace-nowrap">
+          <span>滑动</span><span class="text-sm leading-none">›</span>
+        </button>
+      </div>
+
+      <!-- 模型列表（加高可视区，一次展示更多模型行） -->
+      <div id="pickerList" class="px-3 py-2 overflow-y-auto custom-scroll space-y-1.5 flex-1 min-h-0"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 九大厂商元数据与定制 SVG 标识 ====================
+    const VENDORS = {
+      Google: {
+        name: 'Gemini',
+        sub: 'Google',
+        color: '#38bdf8',
+        badgeBg: 'rgba(56, 189, 248, 0.13)',
+        badgeBorder: 'rgba(56, 189, 248, 0.35)',
+        barGrad: 'linear-gradient(90deg, #38bdf8, #818cf8)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C12.6 7.2 16.8 11.4 22 12C16.8 12.6 12.6 16.8 12 22C11.4 16.8 7.2 12.6 2 12C7.2 11.4 11.4 7.2 12 2Z"/></svg>`
+      },
+      OpenAI: {
+        name: 'GPT',
+        sub: 'OpenAI',
+        color: '#10b981',
+        badgeBg: 'rgba(16, 185, 129, 0.13)',
+        badgeBorder: 'rgba(16, 185, 129, 0.35)',
+        barGrad: 'linear-gradient(90deg, #10b981, #34d399)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-2.9-7.1-2.1 2.1M7 17l-2.1 2.1m0-14.2L7 7m10 10 2.1 2.1"/></svg>`
+      },
+      Anthropic: {
+        name: 'Claude',
+        sub: 'Anthropic',
+        color: '#f97316',
+        badgeBg: 'rgba(249, 115, 22, 0.13)',
+        badgeBorder: 'rgba(249, 115, 22, 0.35)',
+        barGrad: 'linear-gradient(90deg, #f97316, #fbbf24)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19L10.5 5h3L20 19m-13-5h10"/></svg>`
+      },
+      xAI: {
+        name: 'Grok',
+        sub: 'xAI',
+        color: '#f59e0b',
+        badgeBg: 'rgba(245, 158, 11, 0.13)',
+        badgeBorder: 'rgba(245, 158, 11, 0.35)',
+        barGrad: 'linear-gradient(90deg, #f59e0b, #fde047)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" d="M4 4l16 16M20 4L4 20"/></svg>`
+      },
+      DeepSeek: {
+        name: 'DeepSeek',
+        sub: '深度求索',
+        color: '#6366f1',
+        badgeBg: 'rgba(99, 102, 241, 0.14)',
+        badgeBorder: 'rgba(99, 102, 241, 0.38)',
+        barGrad: 'linear-gradient(90deg, #6366f1, #38bdf8)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15c4-6 9-6 14-2 2 1.5 4 0 4-3 0-4-5-6-10-4-4 1.5-7 5-8 9z"/></svg>`
+      },
+      Qwen: {
+        name: '千问 Qwen',
+        sub: '阿里巴巴',
+        color: '#a855f7',
+        badgeBg: 'rgba(168, 85, 247, 0.13)',
+        badgeBorder: 'rgba(168, 85, 247, 0.35)',
+        barGrad: 'linear-gradient(90deg, #a855f7, #ec4899)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>`
+      },
+      Kimi: {
+        name: 'Kimi',
+        sub: '月之暗面',
+        color: '#06b6d4',
+        badgeBg: 'rgba(6, 182, 212, 0.13)',
+        badgeBorder: 'rgba(6, 182, 212, 0.35)',
+        barGrad: 'linear-gradient(90deg, #06b6d4, #3b82f6)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+      },
+      ByteDance: {
+        name: '豆包',
+        sub: '字节 Seed',
+        color: '#ec4899',
+        badgeBg: 'rgba(236, 72, 153, 0.13)',
+        badgeBorder: 'rgba(236, 72, 153, 0.35)',
+        barGrad: 'linear-gradient(90deg, #ec4899, #f43f5e)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="8.5" cy="12" r="4.5"/><circle cx="16" cy="9.5" r="3.5"/><circle cx="15.5" cy="15.5" r="2.8"/></svg>`
+      },
+      Meta: {
+        name: 'Muse',
+        sub: 'Meta MSL',
+        color: '#3b82f6',
+        badgeBg: 'rgba(59, 130, 246, 0.13)',
+        badgeBorder: 'rgba(59, 130, 246, 0.35)',
+        barGrad: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+        svg: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z"/></svg>`
+      }
+    };
+
+    // ==================== 评测基准来源配置 ====================
+    const BENCHMARK_SOURCES = {
+      reasoning: [
+        { id: 'composite', name: '2026.10 综合权威基准 (默认)', offsets: [0, 0, 0, 0] },
+        { id: 'aa', name: 'Artificial Analysis Index v5.0', offsets: [-0.3, 0.2, 0.4, -0.2] },
+        { id: 'livebench', name: 'LiveBench (2026-10 盲测)', offsets: [-0.6, 0.4, -0.3, 0.2] },
+        { id: 'gpqa', name: 'GPQA Diamond & FrontierMath', offsets: [0.4, 0.7, -0.5, -0.4] },
+        { id: 'arc', name: 'ARC-AGI-2 抽象推理基准', offsets: [-0.9, -0.4, 0.5, 0] }
+      ],
+      image: [
+        { id: 'lmarena_img', name: 'LMArena 文生图 Elo (arena.ai 2026.10)', eloOffset: 0, offsets: [0, 0, 0] },
+        { id: 'lmarena_edit', name: 'LMArena 多图与单图编辑竞技场', eloOffset: 14, offsets: [0.6, 0.4, -0.2] },
+        { id: 'cjk_typo', name: '中文排版与电商海报盲测基准', eloOffset: -8, offsets: [0.2, -0.2, 0.8] }
+      ]
+    };
+
+    // ==================== 快速生成推理强度档位工具函数 ====================
+    function makeEfforts(labels, baseScores, deltas, estFlags, defaultIdx) {
+      return {
+        defaultEffortIndex: defaultIdx,
+        efforts: labels.map((label, idx) => {
+          const d = deltas[idx];
+          return {
+            id: 'e' + idx,
+            label: label,
+            est: estFlags[idx],
+            scores: baseScores.map((s, i) => {
+              const val = Math.min(99.9, Math.max(50.0, +(s + (Array.isArray(d) ? d[i] : d)).toFixed(1)));
+              return val;
+            })
+          };
+        })
+      };
+    }
+
+    function makeFixedEffort(label, scores, est = false) {
+      return {
+        fixedEffort: true,
+        defaultEffortIndex: 0,
+        efforts: [{ id: 'fixed', label: label || '固定', est, scores }]
+      };
+    }
+
+    // ==================== 1. 推理与通用模型库（截至 2026.10.31 全系共 48 款） ====================
+    // scores 四项依次为: [综合智力指数, 深度推理与数学, 编程与Agent工程, 知识广度与多模态]
+    const REASONING_MODELS = [
+      // ---------------- Google (Gemini) ----------------
+      {
+        id: 'gemini-4-carbon',
+        vendor: 'Google',
+        name: 'Gemini 4 Carbon',
+        release: '2026.10',
+        status: '初步成绩',
+        tier: '前沿旗舰',
+        context: '2M',
+        highlight: '10月28日发布，AA v5.0 榜首(59)，SEC-bench 0.88、WebDev Arena 1768 冠绝全场',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high', 'deep-think'], [98.2, 98.4, 98.5, 98.8], [-3.8, -2.1, -0.9, 0, [0.9, 1.3, 0.8, 0.5]], [true, true, false, false, true], 3)
+      },
+      {
+        id: 'gemini-4-argon',
+        vendor: 'Google',
+        name: 'Gemini 4 Argon',
+        release: '2026.10',
+        status: '现役',
+        tier: '全能旗舰',
+        context: '2M',
+        highlight: '10月13日 GA，专为长程软件工程、企业知识库与网络防御打造的 4 代主力旗舰',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high', 'deep-think'], [96.6, 96.8, 96.4, 97.9], [-3.9, -2.2, -0.9, 0, [1.1, 1.6, 0.9, 0.6]], [true, false, false, false, true], 3)
+      },
+      {
+        id: 'gemini-3-8-flash',
+        vendor: 'Google',
+        name: 'Gemini 3.8 Flash',
+        release: '2026.09',
+        status: '现役',
+        tier: '高智速旗舰',
+        context: '1M',
+        highlight: 'Google 最强 GA Flash 模型，AA Index 40.9 超越 3.1 Pro，输出高达 304 tok/s',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high'], [94.8, 94.9, 95.2, 95.6], [-4.2, -2.3, -1.0, 0], [false, false, false, false], 3)
+      },
+      {
+        id: 'gemini-3-8-live',
+        vendor: 'Google',
+        name: 'Gemini 3.8 Live',
+        release: '2026.09',
+        status: '现役',
+        tier: '实时多模态',
+        context: '1M',
+        highlight: '9月24日上线，支持原生超低延迟音视频流思考与实时工具调用',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high'], [93.2, 92.6, 92.8, 96.8], [-3.5, -1.9, -0.8, 0], [true, false, false, true], 2)
+      },
+      {
+        id: 'gemini-3-7-flash',
+        vendor: 'Google',
+        name: 'Gemini 3.7 Flash',
+        release: '2026.08',
+        status: '现役',
+        tier: '高速主力',
+        context: '1M',
+        highlight: 'AA Index 39.1，279 tok/s 高吞吐工程主力模型，性价比极高',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high'], [93.6, 93.5, 93.8, 94.5], [-4.0, -2.1, -0.9, 0], [false, false, false, false], 3)
+      },
+      {
+        id: 'gemini-3-6-flash',
+        vendor: 'Google',
+        name: 'Gemini 3.6 Flash',
+        release: '2026.07',
+        status: '现役',
+        tier: '均衡中端',
+        context: '1M',
+        highlight: 'Google AI Plus 默认模型，OSWorld-Verified 达 83.0%，多模态底座扎实',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high'], [92.1, 91.8, 92.0, 93.6], [-3.8, -2.0, -0.8, 0], [false, false, false, false], 2)
+      },
+      {
+        id: 'gemini-3-5-flash-lite',
+        vendor: 'Google',
+        name: 'Gemini 3.5 Flash-Lite',
+        release: '2026.07',
+        status: '现役',
+        tier: '极致轻量',
+        context: '1M',
+        highlight: '仅 $0.30/$2.50 每百万 token，高频分类、翻译与 Subagent 路由首选',
+        ...makeEfforts(['minimal', 'low', 'medium', 'high'], [88.4, 87.8, 87.5, 90.2], [-3.2, -1.8, -0.7, 0], [false, false, false, true], 2)
+      },
+      {
+        id: 'gemini-3-1-pro',
+        vendor: 'Google',
+        name: 'Gemini 3.1 Pro',
+        release: '2026.02',
+        status: '现役',
+        tier: '长窗口Pro',
+        context: '2M',
+        highlight: 'GPQA Diamond 94.3%、SWE-bench 80.6%，2M 超长文档与多模态精细理解',
+        ...makeEfforts(['low', 'medium', 'high', 'deep-think'], [94.0, 94.5, 93.2, 96.5], [-2.4, -1.0, 0, [1.2, 1.8, 0.8, 0.5]], [false, false, false, false], 2)
+      },
+      {
+        id: 'gemma-4-27b',
+        vendor: 'Google',
+        name: 'Gemma 4 27B IT',
+        release: '2026.08',
+        status: '开源',
+        tier: '开源权重',
+        context: '128K',
+        highlight: 'Google 第四代开源权重旗舰，单卡可部署的高性能端侧与私有化模型',
+        ...makeFixedEffort('固定', [87.6, 87.2, 86.8, 88.5], false)
+      },
+
+      // ---------------- OpenAI (GPT) ----------------
+      {
+        id: 'gpt-6-astra',
+        vendor: 'OpenAI',
+        name: 'GPT-6 Astra',
+        release: '2026.09',
+        status: '现役',
+        tier: '全能旗舰',
+        context: '1.05M',
+        highlight: 'OpenAI 最强旗舰，专为极限科研推理、架构设计、Computer Use 与长文档打造',
+        ...makeEfforts(['low', 'medium', 'high', 'xhigh', 'max'], [97.5, 98.0, 97.6, 97.2], [-2.8, -1.2, 0, 0.7, [1.3, 1.6, 1.2, 0.9]], [false, false, false, false, true], 2)
+      },
+      {
+        id: 'gpt-6-1-sol',
+        vendor: 'OpenAI',
+        name: 'GPT-6.1 Sol',
+        release: '2026.09',
+        status: '现役',
+        tier: '主力旗舰/编程',
+        context: '1.05M',
+        highlight: '9月29日 DevDay 发布，以 1/5 价格 ($2/$10) 逼近 Astra 性能，Codex 官方默认底座',
+        ...makeEfforts(['low', 'medium', 'high', 'xhigh', 'max'], [96.8, 97.1, 97.5, 96.4], [-2.9, -1.1, 0, 0.6, [1.1, 1.3, 1.2, 0.7]], [false, false, false, false, true], 2)
+      },
+      {
+        id: 'gpt-6-1-terra',
+        vendor: 'OpenAI',
+        name: 'GPT-6.1 Terra',
+        release: '2026.10',
+        status: '初步成绩',
+        tier: '均衡中端',
+        context: '1.05M',
+        highlight: '10月26日最新上线，面向日常复杂工作流与高频企业 Agent 的高性价比主力',
+        ...makeEfforts(['low', 'medium', 'high', 'xhigh', 'max'], [94.6, 94.8, 95.0, 94.5], [-2.6, -1.0, 0, 0.5, 0.9], [true, false, false, true, true], 2)
+      },
+      {
+        id: 'gpt-6-luna',
+        vendor: 'OpenAI',
+        name: 'GPT-6 Luna',
+        release: '2026.09',
+        status: '现役',
+        tier: '高速轻量',
+        context: '1.05M',
+        highlight: '仅 $0.10/$0.50 每百万 token，唯一支持 none 零思考档位的 1.05M 上下文闪电模型',
+        ...makeEfforts(['none', 'low', 'medium', 'high', 'max'], [89.8, 89.5, 90.2, 90.0], [-4.1, -2.2, -0.9, 0, 0.8], [false, false, false, false, true], 3)
+      },
+      {
+        id: 'gpt-5-6-sol',
+        vendor: 'OpenAI',
+        name: 'GPT-5.6 Sol',
+        release: '2026.07',
+        status: '现役',
+        tier: '多Agent旗舰',
+        context: '1M',
+        highlight: '支持 ultra 四路并行子 Agent 协同档位，在 CursorBench 与金融建模中表现优异',
+        ...makeEfforts(['low', 'medium', 'high', 'xhigh', 'max', 'ultra'], [95.2, 95.6, 95.8, 94.9], [-3.2, -1.6, -0.6, 0, 0.6, [1.3, 1.5, 1.4, 0.8]], [false, false, false, false, false, true], 3)
+      },
+      {
+        id: 'gpt-5-6-terra',
+        vendor: 'OpenAI',
+        name: 'GPT-5.6 Terra',
+        release: '2026.07',
+        status: '现役',
+        tier: '次代均衡',
+        context: '1M',
+        highlight: 'ChatGPT Work 免费与 Go 档默认模型，兼顾响应速度与多步工具调用',
+        ...makeEfforts(['low', 'medium', 'high', 'xhigh', 'max'], [92.4, 92.5, 92.8, 92.2], [-2.8, -1.3, -0.4, 0, 0.6], [false, false, false, false, true], 2)
+      },
+      {
+        id: 'gpt-5-6-luna',
+        vendor: 'OpenAI',
+        name: 'GPT-5.6 Luna',
+        release: '2026.07',
+        status: '现役',
+        tier: '次代轻量',
+        context: '1M',
+        highlight: '5.6 系列高吞吐轻量模型，适合大规模流水线提取与结构化输出',
+        ...makeEfforts(['none', 'low', 'medium', 'high'], [88.0, 87.6, 88.2, 88.5], [-3.5, -1.8, -0.7, 0], [false, false, false, false], 2)
+      },
+
+      // ---------------- Anthropic (Claude) ----------------
+      {
+        id: 'claude-fable-5-1',
+        vendor: 'Anthropic',
+        name: 'Claude Fable 5.1',
+        release: '2026.09',
+        status: '现役',
+        tier: '超旗舰 Frontier',
+        context: '1M',
+        highlight: 'Anthropic 最高端 Frontier 档 ($10/$50)，专为 Opus 无法解决的超难长程推理设计 (同源 Mythos 5.1)',
+        ...makeEfforts(['low', 'medium', 'high', 'max'], [98.4, 98.7, 98.9, 97.6], [-2.4, -1.0, 0, [0.8, 1.1, 0.9, 0.5]], [false, false, false, true], 2)
+      },
+      {
+        id: 'claude-opus-5-5',
+        vendor: 'Anthropic',
+        name: 'Claude Opus 5.5',
+        release: '2026.09',
+        status: '现役',
+        tier: '主力旗舰',
+        context: '1M',
+        highlight: '9月22日发布 ($4/$20)，LLM Stats 与 Toloka Arena 综合排名第一的全能旗舰王牌',
+        ...makeEfforts(['low', 'medium', 'high', 'max'], [98.3, 98.2, 99.1, 97.5], [-2.6, -1.1, 0, [0.7, 0.9, 0.7, 0.4]], [false, false, false, false], 2)
+      },
+      {
+        id: 'claude-sonnet-5-5',
+        vendor: 'Anthropic',
+        name: 'Claude Sonnet 5.5',
+        release: '2026.09',
+        status: '现役',
+        tier: '均衡/编程主力',
+        context: '1M',
+        highlight: '9月28日发布 ($2/$10)，1M 上下文 + 128K 输出，日常 IDE 编程与 Agent 性价比之王',
+        ...makeEfforts(['low', 'medium', 'high', 'max'], [96.5, 96.2, 97.8, 95.8], [-2.9, -1.3, 0, 0.6], [false, false, false, true], 2)
+      },
+      {
+        id: 'claude-haiku-5-5',
+        vendor: 'Anthropic',
+        name: 'Claude Haiku 5.5',
+        release: '2026.10',
+        status: '现役',
+        tier: '极速轻量',
+        context: '1M',
+        highlight: '10月7日发布，100K 内仅 $0.10/$0.50，默认开启自适应思考，Subagent 极速利器',
+        ...makeFixedEffort('adaptive (自适应)', [91.4, 90.8, 92.6, 90.5], false)
+      },
+      {
+        id: 'claude-opus-5',
+        vendor: 'Anthropic',
+        name: 'Claude Opus 5',
+        release: '2026.05',
+        status: '现役',
+        tier: '前代旗舰',
+        context: '1M',
+        highlight: 'Claude 5 初代旗舰，在长程自主任务与软件工程中依然保持极高稳定性',
+        ...makeEfforts(['low', 'medium', 'high'], [95.4, 95.2, 96.3, 94.8], [-2.2, -0.9, 0], [false, false, false], 2)
+      },
+      {
+        id: 'claude-opus-4-6',
+        vendor: 'Anthropic',
+        name: 'Claude Opus 4.6',
+        release: '2026.02',
+        status: '现役',
+        tier: '经典旗舰',
+        context: '500K',
+        highlight: '4.x 世代终极版本，Vending-Bench 2 实测 8017 分，将逐步向 5.5 迁移',
+        ...makeEfforts(['low', 'medium', 'high'], [93.2, 93.0, 94.5, 92.6], [-2.4, -1.0, 0], [false, false, false], 2)
+      },
+
+      // ---------------- xAI (Grok) ----------------
+      {
+        id: 'grok-4-7',
+        vendor: 'xAI',
+        name: 'Grok 4.7',
+        release: '2026.09',
+        status: '现役',
+        tier: '全能旗舰',
+        context: '1M',
+        highlight: '9月21日发布，xAI 最新旗舰，大幅强化长周期复杂编程、自我校验与文档演示生成',
+        ...makeEfforts(['low', 'medium', 'high', 'xhigh'], [96.7, 97.4, 96.8, 96.0], [-2.8, -1.3, 0, [0.8, 1.1, 0.9, 0.5]], [false, false, false, true], 2)
+      },
+      {
+        id: 'grok-4-6',
+        vendor: 'xAI',
+        name: 'Grok 4.6',
+        release: '2026.08',
+        status: '现役',
+        tier: 'Agent/编程旗舰',
+        context: '500K',
+        highlight: '8月发布 ($2/1M 输入)，专为长程 Agent、代码库自测与交互式前端项目优化',
+        ...makeEfforts(['low', 'medium', 'high'], [95.2, 95.6, 95.8, 94.6], [-2.5, -1.1, 0], [false, false, false], 2)
+      },
+      {
+        id: 'grok-4-5',
+        vendor: 'xAI',
+        name: 'Grok 4.5',
+        release: '2026.07',
+        status: '现役',
+        tier: '高性价比工程',
+        context: '500K',
+        highlight: '与 Cursor 联合调优的高效代码与大仓库分析模型，工程性价比突出',
+        ...makeEfforts(['low', 'medium', 'high'], [94.0, 94.3, 94.9, 93.5], [-2.4, -1.0, 0], [false, false, false], 2)
+      },
+      {
+        id: 'grok-4-3',
+        vendor: 'xAI',
+        name: 'Grok 4.3',
+        release: '2026.05',
+        status: '现役',
+        tier: '高密推理',
+        context: '1M',
+        highlight: '支持 1M 上下文的高推理密度生产级模型，适合跨图文复杂文档工作流',
+        ...makeEfforts(['low', 'medium', 'high'], [92.8, 93.2, 92.6, 93.0], [-2.3, -1.0, 0], [false, false, false], 2)
+      },
+      {
+        id: 'grok-4-20-reasoning',
+        vendor: 'xAI',
+        name: 'Grok 4.20 Reasoning',
+        release: '2026.03',
+        status: '现役',
+        tier: '多Agent长窗口',
+        context: '2M',
+        highlight: '支持高达 2M API 上下文与深度扩展思考，幻觉率降低 65% (降至 4.22%)',
+        ...makeEfforts(['low', 'medium', 'high', 'heavy'], [93.5, 94.6, 92.8, 94.2], [-2.8, -1.3, 0, 0.9], [false, false, false, true], 2)
+      },
+      {
+        id: 'grok-4-1-fast',
+        vendor: 'xAI',
+        name: 'Grok 4.1 Fast',
+        release: '2025.11',
+        status: '现役',
+        tier: '高速低延迟',
+        context: '256K',
+        highlight: '保留 Grok 4.1 核心推理能力并针对低延迟生产环境加速',
+        ...makeEfforts(['low', 'medium', 'high'], [90.4, 90.6, 89.8, 90.8], [-2.1, -0.9, 0], [false, false, false], 1)
+      },
+      {
+        id: 'grok-4-heavy',
+        vendor: 'xAI',
+        name: 'Grok-4 Heavy',
+        release: '2025.07',
+        status: '现役',
+        tier: '多路深度思考',
+        context: '256K',
+        highlight: 'xAI 经典多路并行重型推理系统，适合高风险战略与多视角科研拆解',
+        ...makeFixedEffort('Heavy (多路满血)', [93.8, 95.0, 92.4, 93.0], false)
+      },
+
+      // ---------------- DeepSeek (深度求索) ----------------
+      {
+        id: 'deepseek-v4-1-flash',
+        vendor: 'DeepSeek',
+        name: 'DeepSeek V4.1 Flash (1017)',
+        release: '2026.10',
+        status: '现役',
+        tier: '非对称多模态主力',
+        context: '256K',
+        highlight: '全新非对称架构最小尺寸模型，原生多模态，1017版在 Terminal-Bench 跃升至 42.3 超越 V4 Pro',
+        ...makeEfforts(['非思考 (Chat)', '思考模式 (low)', '思考模式 (medium)', '思考模式 (high)'], [95.6, 96.8, 96.4, 94.2], [-3.6, -1.8, -0.7, 0], [false, false, false, false], 3)
+      },
+      {
+        id: 'deepseek-v4-pro',
+        vendor: 'DeepSeek',
+        name: 'DeepSeek V4 Pro',
+        release: '2026.08',
+        status: '现役',
+        tier: '1M旗舰推理',
+        context: '1M',
+        highlight: '1M 超长上下文旗舰，Terminal Bench 2.1 达 83.9、DeepSWE 59.3，重度工程与数学利器',
+        ...makeEfforts(['非思考', '思考 (标准)', '思考 (深度)'], [95.2, 96.5, 95.8, 93.8], [-3.4, -1.1, 0], [false, false, false], 2)
+      },
+      {
+        id: 'deepseek-v3-2',
+        vendor: 'DeepSeek',
+        name: 'DeepSeek V3.2',
+        release: '2025.12',
+        status: '开源',
+        tier: '开源MoE经典',
+        context: '128K',
+        highlight: '极具性价比的开源 MoE 经典底座，中文创作与私有化部署广泛采用',
+        ...makeEfforts(['非思考', '思考模式'], [91.2, 92.0, 91.5, 91.0], [-2.5, 0], [false, false], 1)
+      },
+      {
+        id: 'deepseek-r1-0528',
+        vendor: 'DeepSeek',
+        name: 'DeepSeek R1 (0528)',
+        release: '2025.05',
+        status: '开源',
+        tier: '开源强化推理',
+        context: '128K',
+        highlight: '强化学习深度思考经典里程碑模型，开源社区数学与竞赛标杆',
+        ...makeFixedEffort('R1 满血思考', [90.8, 93.4, 90.2, 89.5], false)
+      },
+
+      // ---------------- 阿里巴巴 (千问 Qwen) ----------------
+      {
+        id: 'qwen3-8-max',
+        vendor: 'Qwen',
+        name: 'Qwen3.8-Max',
+        release: '2026.09',
+        status: '现役',
+        tier: '全能旗舰',
+        context: '1M',
+        highlight: '阿里千问最新一代闭源旗舰，BenchLM 阿里榜首，双语理解、数学与复杂 Agent 全面领先',
+        ...makeEfforts(['非思考', 'low', 'medium', 'high', 'max (满血思考)'], [96.4, 97.0, 96.6, 96.2], [-3.8, -2.0, -0.9, 0, [0.7, 1.0, 0.8, 0.5]], [false, false, false, false, true], 3)
+      },
+      {
+        id: 'qwen3-8-flash-next',
+        vendor: 'Qwen',
+        name: 'Qwen3.8-Flash-Next',
+        release: '2026.09',
+        status: '现役',
+        tier: '高速次旗舰',
+        context: '1M',
+        highlight: '架构革新的高速混合思考模型，BenchLM 阿里系排名第 2，兼顾高吞吐与深度推理',
+        ...makeEfforts(['非思考', 'low', 'medium', 'high'], [94.2, 94.6, 94.5, 93.8], [-3.5, -1.8, -0.7, 0], [false, false, false, false], 3)
+      },
+      {
+        id: 'qwen3-8-27b',
+        vendor: 'Qwen',
+        name: 'Qwen3.8-27B',
+        release: '2026.09',
+        status: '开源',
+        tier: '开源稠密旗舰',
+        context: '256K',
+        highlight: 'Toloka Arena 登上成本可靠性前沿 ($0.70/任务)，中等尺寸开源模型天花板',
+        ...makeEfforts(['非思考', '思考 (标准)', '思考 (高预算)'], [91.5, 92.2, 92.0, 90.8], [-3.0, -1.0, 0], [false, false, false], 2)
+      },
+      {
+        id: 'qwen3-7-max',
+        vendor: 'Qwen',
+        name: 'Qwen3.7-Max',
+        release: '2026.05',
+        status: '现役',
+        tier: '主力旗舰',
+        context: '1M',
+        highlight: '2026 阿里云峰会发布，发布时登顶 Arena 国产第一，企业级生产主力',
+        ...makeEfforts(['非思考', 'low', 'medium', 'high'], [94.8, 95.2, 94.9, 95.0], [-3.4, -1.7, -0.7, 0], [false, false, false, false], 3)
+      },
+      {
+        id: 'qwen3-7-plus',
+        vendor: 'Qwen',
+        name: 'Qwen3.7-Plus',
+        release: '2026.06',
+        status: '现役',
+        tier: '均衡中端',
+        context: '1M',
+        highlight: '6月发布的均衡高性价比主力，广泛服务于百炼平台企业知识库与客服 Agent',
+        ...makeEfforts(['非思考', 'low', 'medium', 'high'], [92.6, 92.8, 92.5, 93.0], [-3.1, -1.5, -0.6, 0], [false, false, false, false], 2)
+      },
+      {
+        id: 'qwen3-coder-plus',
+        vendor: 'Qwen',
+        name: 'Qwen3-Coder-Plus',
+        release: '2026.07',
+        status: '现役',
+        tier: '编程专用',
+        context: '256K',
+        highlight: '千问代码专用演进版，针对全栈仓库重构、Terminal 操作与单元测试生成深度强化',
+        ...makeEfforts(['standard', 'deep-code'], [93.4, 93.0, 96.2, 91.5], [-1.8, 0], [false, false], 1)
+      },
+
+      // ---------------- 月之暗面 (Kimi) ----------------
+      {
+        id: 'kimi-k3-1-pro',
+        vendor: 'Kimi',
+        name: 'Kimi K3.1 Pro',
+        release: '2026.10',
+        status: '开源',
+        tier: '3万亿参数旗舰',
+        context: '1M',
+        highlight: '10月23日发布，3万亿参数旗舰(即将开放权重)，LLM Stats 全球前五，代码、3D建模与金融Agent跃升',
+        ...makeEfforts(['low', 'medium', 'high', 'max'], [96.9, 97.2, 97.4, 96.5], [-2.9, -1.3, 0, [0.6, 0.8, 0.8, 0.4]], [false, false, false, true], 2)
+      },
+      {
+        id: 'kimi-k3-1-pro-highspeed',
+        vendor: 'Kimi',
+        name: 'Kimi K3.1 Pro Highspeed',
+        release: '2026.10',
+        status: '现役',
+        tier: '高速旗舰',
+        context: '1M',
+        highlight: 'K3.1 Pro 官方高速版本，生成速度提升 2~3 倍，保持同等 1M 视觉与长程 Agent 精度',
+        ...makeEfforts(['low', 'medium', 'high'], [96.4, 96.6, 96.8, 96.0], [-2.5, -1.1, 0], [false, false, false], 2)
+      },
+      {
+        id: 'kimi-k3',
+        vendor: 'Kimi',
+        name: 'Kimi K3 (2.8T Open)',
+        release: '2026.07',
+        status: '开源',
+        tier: '开源巨型MoE',
+        context: '1M',
+        highlight: '7月16日发布，全球首个开源的 2.8 万亿参数原生多模态模型，1M 上下文深度推理标杆',
+        ...makeEfforts(['low', 'medium', 'high'], [95.2, 95.6, 95.4, 95.0], [-2.6, -1.1, 0], [false, false, false], 2)
+      },
+      {
+        id: 'kimi-k2-7-code',
+        vendor: 'Kimi',
+        name: 'Kimi K2.7 Code',
+        release: '2026.06',
+        status: '现役',
+        tier: '编程专用',
+        context: '256K',
+        highlight: 'Kimi API 现役主力编程专用模型，针对 Kimi Code 终端与多文件协同开发调优',
+        ...makeEfforts(['standard', 'high'], [93.0, 92.8, 95.8, 91.2], [-1.9, 0], [false, false], 1)
+      },
+
+      // ---------------- 字节跳动 (豆包 Seed) ----------------
+      {
+        id: 'doubao-seed-2-1-pro',
+        vendor: 'ByteDance',
+        name: '豆包 Seed 2.1 Pro',
+        release: '2026.06',
+        status: '现役',
+        tier: '全能旗舰',
+        context: '256K',
+        highlight: '火山引擎夏季 FORCE 大会发布的最新旗舰，支持 256K 输入 + 256K 超长思维链输出',
+        ...makeEfforts(['不思考', 'low', 'medium', 'high (256K CoT)'], [95.4, 95.8, 94.8, 96.2], [-3.8, -2.0, -0.8, 0], [false, false, false, false], 3)
+      },
+      {
+        id: 'doubao-seed-2-1-turbo',
+        vendor: 'ByteDance',
+        name: '豆包 Seed 2.1 Turbo',
+        release: '2026.06',
+        status: '现役',
+        tier: '高速高性价比',
+        context: '256K',
+        highlight: '价格仅为 2.1 Pro 的一半 (3元/15元每百万)，完整保留 256K 上下文与多模态能力',
+        ...makeEfforts(['不思考', 'low', 'medium', 'high'], [93.5, 93.4, 92.8, 94.5], [-3.4, -1.7, -0.7, 0], [false, false, false, false], 2)
+      },
+      {
+        id: 'doubao-seed-2-0-pro',
+        vendor: 'ByteDance',
+        name: '豆包 Seed 2.0 Pro',
+        release: '2026.02',
+        status: '现役',
+        tier: '前代旗舰',
+        context: '256K',
+        highlight: '2月发布的 2.0 世代全模态 Agent 旗舰，中文语境与多模态理解成熟稳定',
+        ...makeEfforts(['low', 'medium', 'high'], [93.8, 94.0, 93.2, 94.8], [-2.5, -1.1, 0], [false, false, false], 2)
+      },
+      {
+        id: 'doubao-seed-2-0-code',
+        vendor: 'ByteDance',
+        name: '豆包 Seed 2.0 Code',
+        release: '2026.02',
+        status: '现役',
+        tier: '编程专用',
+        context: '256K',
+        highlight: '字节 TRAE 智能 IDE 核芯引擎，针对前后端组件生成与 Bug 修复专项强化',
+        ...makeEfforts(['standard', 'high'], [92.6, 92.4, 95.4, 91.8], [-1.8, 0], [false, false], 1)
+      },
+      {
+        id: 'doubao-seed-2-0-lite',
+        vendor: 'ByteDance',
+        name: '豆包 Seed 2.0 Lite / Mini',
+        release: '2026.02',
+        status: '现役',
+        tier: '轻量高吞吐',
+        context: '128K',
+        highlight: '豆包 2.0 轻量全模态系列，极低调用成本适配移动端与高并发业务',
+        ...makeEfforts(['不思考', '思考模式'], [88.6, 88.0, 87.8, 90.2], [-2.4, 0], [false, false], 1)
+      },
+      {
+        id: 'seed-realtime',
+        vendor: 'ByteDance',
+        name: 'SeedRealtime (全双工)',
+        release: '2026.08',
+        status: '现役',
+        tier: '实时音视频',
+        context: '128K',
+        highlight: '8月5日上线豆包 App 的首个音视频全双工模型，实时边看边听边说，节奏误差降低 50%',
+        ...makeFixedEffort('实时全双工', [91.2, 89.8, 88.5, 95.6], true)
+      },
+
+      // ---------------- Meta (Muse) ----------------
+      {
+        id: 'muse-wonder-full',
+        vendor: 'Meta',
+        name: 'Muse Wonder Full',
+        release: '2026.10',
+        status: '现役',
+        tier: '超旗舰 Frontier',
+        context: '1M',
+        highlight: '10月12日发布，千兆瓦 Prometheus 集群训练，AA 指数达 56 追平 Sonnet 5.5，SWE-Marathon 领先',
+        ...makeEfforts(['low', 'medium', 'high', 'max'], [97.1, 97.3, 97.9, 95.6], [-2.8, -1.2, 0, [0.7, 0.9, 0.8, 0.4]], [false, false, false, true], 2)
+      },
+      {
+        id: 'muse-wonder',
+        vendor: 'Meta',
+        name: 'Muse Wonder',
+        release: '2026.10',
+        status: '现役',
+        tier: '主力Agent旗舰',
+        context: '1M',
+        highlight: '10月12日上线 Meta Model API ($4/$20)，具备 Active Memory 跨会话记忆与 Computer Use 能力',
+        ...makeEfforts(['low', 'medium', 'high', 'max'], [95.8, 95.9, 96.6, 94.8], [-2.7, -1.1, 0, 0.6], [false, false, false, true], 2)
+      },
+      {
+        id: 'muse-spark-1-3',
+        vendor: 'Meta',
+        name: 'Muse Spark 1.3',
+        release: '2026.09',
+        status: '现役',
+        tier: '高效编程/Agent',
+        context: '1M',
+        highlight: '9月2日发布，支持文本/图像/视频输入，比 1.2 减少 20% 工具调用与 25% token 消耗',
+        ...makeEfforts(['low', 'medium', 'high'], [94.2, 94.4, 95.2, 94.6], [-2.5, -1.0, 0], [false, false, false], 2)
+      },
+      {
+        id: 'muse-spark-open',
+        vendor: 'Meta',
+        name: 'Muse Spark Open (816B)',
+        release: '2026.10',
+        status: '开源',
+        tier: '开源巨型MoE',
+        context: '1M',
+        highlight: '10月15日开源，816B 总参数 / 42B 激活 MoE (Spark 1.3 同源底座)，针对 Mac Studio 深度优化',
+        ...makeEfforts(['low', 'medium', 'high'], [93.4, 93.6, 94.4, 93.8], [-2.4, -1.0, 0], [false, false, false], 2)
+      },
+      {
+        id: 'muse-spark-1-2',
+        vendor: 'Meta',
+        name: 'Muse Spark 1.2',
+        release: '2026.08',
+        status: '现役',
+        tier: '编程终端底座',
+        context: '1M',
+        highlight: '8月5日随终端编程 Agent「Muse Code」同步发布，高性价比长程代码模型',
+        ...makeEfforts(['low', 'medium', 'high'], [92.4, 92.2, 93.6, 92.5], [-2.2, -0.9, 0], [false, false, false], 2)
+      },
+      {
+        id: 'muse-glimmer-30b',
+        vendor: 'Meta',
+        name: 'Muse Glimmer 30B',
+        release: '2026.08',
+        status: '开源',
+        tier: '端侧开源多模态',
+        context: '256K',
+        highlight: '8月10日 Apache 2.0 开源，30B 视觉语言模型，可在单张 24GB 消费级显卡离线运行 Agent',
+        ...makeFixedEffort('固定 (端侧直出)', [88.5, 87.9, 89.2, 89.6], false)
+      }
+    ];
+
+    // ==================== 2. 图片生成模型库（截至 2026.10.31 全系共 25 款） ====================
+    // scores 三项依次为: [视觉美学与真实感, 复杂指令与多图一致性, 文字排版渲染 (中/英)]
+    function makeImgEfforts(labels, baseElo, baseScores, eloDeltas, scoreDeltas, estFlags, defaultIdx) {
+      return {
+        defaultEffortIndex: defaultIdx,
+        efforts: labels.map((label, idx) => ({
+          id: 'ie' + idx,
+          label,
+          est: estFlags[idx],
+          elo: baseElo + eloDeltas[idx],
+          scores: baseScores.map(s => Math.min(99.8, Math.max(50.0, +(s + scoreDeltas[idx]).toFixed(1))))
+        }))
+      };
+    }
+
+    const IMAGE_MODELS = [
+      // ---------------- OpenAI ----------------
+      {
+        id: 'gpt-image-2-5-sunburst',
+        vendor: 'OpenAI',
+        name: 'GPT-Image-2.5 Sunburst',
+        release: '2026.09',
+        status: '初步成绩',
+        tier: '画质霸主 #1',
+        ci: '±8',
+        votes: '11.4k',
+        highlight: '9月8日发布，LMArena 文生图(1424)、单图编辑、多图编辑三榜断层第一，支持最高 4K 与 16 图参考',
+        ...makeImgEfforts(['low', 'medium', 'high', 'xhigh', 'max'], 1424, [99.1, 99.4, 97.8], [-36, -18, 0, 9, 15], [-2.8, -1.3, 0, 0.5, 0.8], [false, false, false, true, true], 2)
+      },
+      {
+        id: 'gpt-image-2-5-flare',
+        vendor: 'OpenAI',
+        name: 'GPT-Image-2.5 Flare',
+        release: '2026.09',
+        status: '初步成绩',
+        tier: '高速旗舰 #2',
+        ci: '±8',
+        votes: '12.8k',
+        highlight: 'LMArena 总榜第 2 (1401)，实测生成速度比 GPT Image 2 快 7 倍、成本低 75%，高并发首选',
+        ...makeImgEfforts(['low', 'medium', 'high', 'xhigh', 'max'], 1401, [97.8, 98.5, 97.2], [-34, -16, 0, 7, 12], [-2.6, -1.2, 0, 0.4, 0.7], [false, false, false, true, true], 2)
+      },
+      {
+        id: 'gpt-image-2',
+        vendor: 'OpenAI',
+        name: 'GPT-Image-2',
+        release: '2026.04',
+        status: '现役',
+        tier: '全能生图 #3',
+        ci: '±4',
+        votes: '92.5k',
+        highlight: 'LMArena 总榜第 3 (1383)，超 9 万票盲测检验的成熟商业级生图与精修底座',
+        ...makeImgEfforts(['low', 'medium', 'high'], 1383, [96.8, 97.6, 96.4], [-28, 0, 10], [-2.0, 0, 0.6], [false, false, false], 1)
+      },
+      {
+        id: 'gpt-image-1',
+        vendor: 'OpenAI',
+        name: 'GPT-Image-1',
+        release: '2025.04',
+        status: '已退役',
+        tier: '初代原生生图',
+        ci: '±3',
+        votes: '310k',
+        highlight: '已于 2026年10月23日 正式下线退役，由 GPT-Image-2.5 系列全面接替',
+        ...makeImgEfforts(['low', 'medium', 'high'], 1245, [90.5, 91.8, 89.6], [-22, -8, 0], [-1.8, -0.7, 0], [false, false, false], 2)
+      },
+
+      // ---------------- Google ----------------
+      {
+        id: 'nano-banana-2-1',
+        vendor: 'Google',
+        name: 'Nano Banana 2.1',
+        release: '2026.10',
+        status: '现役',
+        tier: '高速生图王牌',
+        ci: '±6',
+        votes: '29.6k',
+        highlight: '10月6日 GA (基于 Gemini 3.6 Flash)，API 降价 50%，支持 1:8 超宽全景、4K 输出与 Google 搜索接地',
+        ...makeImgEfforts(['minimal', 'medium', 'high (Thinking)'], 1288, [95.6, 96.8, 96.5], [-24, 0, 14], [-1.9, 0, 0.9], [false, false, false], 1)
+      },
+      {
+        id: 'nano-banana-pro',
+        vendor: 'Google',
+        name: 'Nano Banana Pro (3 Pro Image)',
+        release: '2026.02',
+        status: '现役',
+        tier: '旗舰精修生图',
+        ci: '±5',
+        votes: '68.2k',
+        highlight: '即 Gemini 3 Pro Image ($0.134/张)，面向严苛商业视觉、多角色一致性与多语种本地化精修',
+        ...makeImgEfforts(['standard', 'high (Deep Think)'], 1296, [96.4, 97.2, 96.8], [0, 12], [0, 0.8], [false, true], 0)
+      },
+      {
+        id: 'nano-banana-2',
+        vendor: 'Google',
+        name: 'Nano Banana 2 (3.1 Flash Image)',
+        release: '2026.05',
+        status: '现役',
+        tier: '前代主力生图',
+        ci: '±4',
+        votes: '145k',
+        highlight: 'LMArena 联网搜索模式下录得 1261 分，目前仍在线但官方建议迁移至 Nano Banana 2.1',
+        ...makeImgEfforts(['minimal', 'medium', 'high'], 1261, [93.8, 94.5, 94.0], [-18, 0, 8], [-1.4, 0, 0.5], [false, false, false], 1)
+      },
+      {
+        id: 'imagen-4-ultra',
+        vendor: 'Google',
+        name: 'Imagen 4.0 Ultra',
+        release: '2025.08',
+        status: '已退役',
+        tier: '经典摄影扩散',
+        ci: '±4',
+        votes: '190k',
+        highlight: '已于 2026年6月30日 从 Vertex AI 退役，全面由原生多模态 Nano Banana 家族取代',
+        ...makeImgEfforts(['固定 (直出)'], 1218, [92.4, 88.5, 86.2], [0], [0], [false], 0)
+      },
+
+      // ---------------- xAI ----------------
+      {
+        id: 'grok-imagine-2-0',
+        vendor: 'xAI',
+        name: 'Grok Imagine 2.0',
+        release: '2026.08',
+        status: '现役',
+        tier: '精准编辑旗舰 #5',
+        ci: '±5',
+        votes: '46.8k',
+        highlight: '8月7日发布，LMArena 文生图高居第 5，支持最高 2K 分辨率、魔棒分割、背景移除与版式控制',
+        ...makeImgEfforts(['standard (1K)', 'high (2K 精绘)'], 1298, [96.2, 95.8, 93.4], [-14, 0], [-1.2, 0], [false, false], 1)
+      },
+      {
+        id: 'grok-imagine-1-0',
+        vendor: 'xAI',
+        name: 'Grok Imagine 1.0 (Aurora)',
+        release: '2026.02',
+        status: '现役',
+        tier: '写实生图底座',
+        ci: '±4',
+        votes: '112k',
+        highlight: '基于 Aurora + Flux 混合引擎的首代 Grok Imagine，擅长人物写实与快速创意迭代',
+        ...makeImgEfforts(['固定 (直出)'], 1236, [92.8, 90.4, 87.5], [0], [0], [false], 0)
+      },
+
+      // ---------------- Meta (Muse) ----------------
+      {
+        id: 'muse-image',
+        vendor: 'Meta',
+        name: 'Muse Image',
+        release: '2026.07',
+        status: '现役',
+        tier: 'Agentic推理生图 #7',
+        ci: '±5',
+        votes: '41.2k',
+        highlight: '7月7日发布，8月上线 API ($0.01/张)，LMArena 第 7 (~1280 Elo)，先搜索/写代码规划版式再渲染，二维码与图表极准',
+        ...makeImgEfforts(['single-pass (直出)', 'standard (自检)', 'high (联网+代码渲染)'], 1280, [95.0, 96.9, 95.8], [-26, -10, 0], [-2.1, -0.8, 0], [false, false, false], 2)
+      },
+
+      // ---------------- 字节跳动 (豆包 Seedream) ----------------
+      {
+        id: 'seedream-5-0-pro',
+        vendor: 'ByteDance',
+        name: '豆包 Seedream 5.0 Pro',
+        release: '2026.06',
+        status: '现役',
+        tier: '4K中英排版王牌 #10',
+        ci: '±5',
+        votes: '54.0k',
+        highlight: '6月23日发布，LMArena 多图编辑全球第 2、文生图第 10，原生 4K 直出，中文小字海报与人像影视感顶尖',
+        ...makeImgEfforts(['standard (2K)', 'high (4K 精绘)', 'max (多图融合精修)'], 1258, [96.6, 96.4, 98.9], [-16, 0, 10], [-1.3, 0, 0.7], [false, false, true], 1)
+      },
+      {
+        id: 'seedream-4-5',
+        vendor: 'ByteDance',
+        name: '豆包 Seedream 4.5',
+        release: '2025.12',
+        status: '现役',
+        tier: '高性价比商业生图',
+        ci: '±4',
+        votes: '89.0k',
+        highlight: '即梦与豆包 App 经典主力生图模型，人像美感与国风插画表现稳定',
+        ...makeImgEfforts(['standard', 'high'], 1212, [93.2, 91.8, 95.4], [-10, 0], [-0.9, 0], [false, false], 1)
+      },
+      {
+        id: 'seedream-4-0',
+        vendor: 'ByteDance',
+        name: '豆包 Seedream 4.0',
+        release: '2025.08',
+        status: '现役',
+        tier: '视频首尾帧专用',
+        ci: '±4',
+        votes: '105k',
+        highlight: '火山方舟搭配 Seedance 2.0/2.5 生成高一致性视频首尾帧的常用底座',
+        ...makeImgEfforts(['固定 (直出)'], 1186, [91.0, 90.2, 92.8], [0], [0], [false], 0)
+      },
+
+      // ---------------- 阿里巴巴 (千问 Qwen / 万相) ----------------
+      {
+        id: 'qwen-image-2-0-pro',
+        vendor: 'Qwen',
+        name: 'Qwen-Image 2.0 Pro',
+        release: '2026.02',
+        status: '现役',
+        tier: '双语排版生图 #19',
+        ci: '±5',
+        votes: '48.5k',
+        highlight: 'LMArena 1192 Elo (#19)，DPG-Bench 88.32，支持 1000 token 长提示词、原生 2K 与曲面中英文字渲染',
+        ...makeImgEfforts(['standard', 'high (+prompt_extend)'], 1192, [93.4, 94.2, 97.6], [-12, 0], [-1.0, 0], [false, false], 1)
+      },
+      {
+        id: 'qwen-image-2-0',
+        vendor: 'Qwen',
+        name: 'Qwen-Image 2.0 (7B)',
+        release: '2026.02',
+        status: '现役',
+        tier: '轻量统一生图/编辑',
+        ci: '±5',
+        votes: '39.2k',
+        highlight: '仅 7B 参数合并文生图与图像编辑 ($0.02/张)，电商商品换背景与双语促销横幅高性价比首选',
+        ...makeImgEfforts(['standard', 'high'], 1168, [91.2, 92.0, 95.8], [-10, 0], [-0.8, 0], [false, false], 1)
+      },
+      {
+        id: 'wan-2-2-t2i',
+        vendor: 'Qwen',
+        name: '通义万相 Wan 2.2 文生图',
+        release: '2025.11',
+        status: '开源',
+        tier: '开源影视美学',
+        ci: '±5',
+        votes: '42.0k',
+        highlight: '阿里万相 2.2 视觉生成模型，光影构图与东方美学质感突出',
+        ...makeImgEfforts(['固定 (直出)'], 1154, [92.0, 89.5, 91.2], [0], [0], [false], 0)
+      },
+
+      // ---------------- DeepSeek ----------------
+      {
+        id: 'deepseek-v4-multimodal-gen',
+        vendor: 'DeepSeek',
+        name: 'DeepSeek-V4 多模态生成 (284B)',
+        release: '2026.04',
+        status: '初步成绩',
+        tier: 'MoE原生多模态',
+        ci: '±9',
+        votes: '8.2k',
+        highlight: '2026年4月技术报告公布的 284B 总参 / 13B 激活原生多模态模型，基于 V4-Flash 构建，主攻图文协同理解与生成',
+        ...makeImgEfforts(['standard', 'thinking (自回归规划)'], 1118, [86.5, 89.4, 88.0], [-15, 0], [-1.4, 0], [true, true], 1)
+      },
+      {
+        id: 'janus-pro-7b',
+        vendor: 'DeepSeek',
+        name: 'Janus-Pro-7B',
+        release: '2025.01',
+        status: '开源',
+        tier: '开源自回归多模态',
+        ci: '±6',
+        votes: '34.5k',
+        highlight: 'DeepSeek 早期开源统一多模态理解与生成小模型，适合端侧研究，商业生图精度有限',
+        ...makeImgEfforts(['固定 (直出)'], 1042, [79.5, 81.0, 76.8], [0], [0], [false], 0)
+      },
+
+      // ---------------- Anthropic & Kimi（官方无生图模型，标注暂无） ----------------
+      {
+        id: 'claude-no-image',
+        vendor: 'Anthropic',
+        name: 'Claude 全系 (无官方生图)',
+        release: '—',
+        status: '暂无',
+        tier: '仅视觉理解/SVG代码',
+        unavailable: true,
+        highlight: 'Anthropic 截至 2026.10 仍未发布像素级文生图模型（仅支持图像理解或通过 Opus/Sonnet 编写 SVG/HTML 矢量图）'
+      },
+      {
+        id: 'kimi-no-image',
+        vendor: 'Kimi',
+        name: 'Kimi 全系 (无官方画素生图)',
+        release: '—',
+        status: '暂无',
+        tier: '仅视觉理解/3D建模',
+        unavailable: true,
+        highlight: '月之暗面 Kimi K3.1 Pro 擅长原生视觉理解与参数化 3D 建模重建，但暂无独立文生图像素生成模型'
+      }
+    ];
+
+    // ==================== 快捷预设组合 ====================
+    const PRESETS = {
+      reasoning: [
+        { label: '🔥 10月三大王牌', slots: ['claude-opus-5-5', 'gemini-4-carbon', 'gpt-6-astra'] },
+        { label: '⚡ 主力编程/Agent', slots: ['claude-sonnet-5-5', 'gpt-6-1-sol', 'gemini-3-8-flash'] },
+        { label: '🇨🇳 国产四强对决', slots: ['kimi-k3-1-pro', 'qwen3-8-max', 'deepseek-v4-1-flash'] },
+        { label: '🚀 豆包 vs Grok vs Muse', slots: ['doubao-seed-2-1-pro', 'grok-4-7', 'muse-wonder-full'] }
+      ],
+      image: [
+        { label: '🏆 文生图前三霸主', slots: ['gpt-image-2-5-sunburst', 'nano-banana-2-1', 'grok-imagine-2-0'] },
+        { label: '🖼️ 中英海报排版王', slots: ['seedream-5-0-pro', 'qwen-image-2-0-pro', 'muse-image'] },
+        { label: '⚡ 极速生图性价比', slots: ['gpt-image-2-5-flare', 'nano-banana-2-1', 'qwen-image-2-0'] }
+      ]
+    };
+
+    // ==================== 全局应用状态 ====================
+    let currentBoard = 'reasoning'; // 'reasoning' | 'image'
+    let currentBenchmarkId = 'composite';
+    let slots = ['claude-opus-5-5', 'gemini-4-carbon', null]; // 默认两栏旗舰 + 第三栏空位
+    let slotEffortIdx = [2, 3, 2]; // 每个槽位当前所选推理强度档位索引
+    let mobileRightSlot = 1; // 手机端右侧槽位显示 index 1 还是 2
+    let activePickerSlot = 0;
+    let activeVendorFilter = 'ALL';
+    let pickerSearchQuery = '';
+
+    function getModelList(board = currentBoard) {
+      return board === 'reasoning' ? REASONING_MODELS : IMAGE_MODELS;
+    }
+
+    function getModelById(id, board = currentBoard) {
+      if (!id) return null;
+      return getModelList(board).find(m => m.id === id) || null;
+    }
+
+    function syncDefaultEfforts() {
+      slots.forEach((id, idx) => {
+        const m = getModelById(id);
+        if (m && m.efforts) {
+          slotEffortIdx[idx] = m.defaultEffortIndex ?? 0;
+        } else {
+          slotEffortIdx[idx] = 0;
+        }
+      });
+    }
+
+    // ==================== 切换榜单模式 ====================
+    function switchBoard(board) {
+      if (currentBoard === board) return;
+      currentBoard = board;
+      currentBenchmarkId = BENCHMARK_SOURCES[board][0].id;
+
+      if (board === 'reasoning') {
+        slots = ['claude-opus-5-5', 'gemini-4-carbon', null];
+      } else {
+        slots = ['gpt-image-2-5-sunburst', 'nano-banana-2-1', null];
+      }
+      mobileRightSlot = 1;
+      syncDefaultEfforts();
+      updateHeaderUI();
+      renderAll();
+    }
+
+    function resetSelection() {
+      if (currentBoard === 'reasoning') {
+        slots = ['claude-opus-5-5', 'gemini-4-carbon', null];
+      } else {
+        slots = ['gpt-image-2-5-sunburst', 'nano-banana-2-1', null];
+      }
+      mobileRightSlot = 1;
+      syncDefaultEfforts();
+      renderAll();
+    }
+
+    function applyPreset(pIdx) {
+      const preset = PRESETS[currentBoard][pIdx];
+      if (!preset) return;
+      slots = [...preset.slots];
+      syncDefaultEfforts();
+      renderAll();
+    }
+
+    function changeBenchmarkSource(benchId) {
+      currentBenchmarkId = benchId;
+      renderAll();
+    }
+
+    let bubbleTimers = [null, null, null];
+
+    function showSliderBubble(slotIdx, autoHideMs = 0) {
+      const bubble = document.getElementById(`slider-bubble-${slotIdx}`);
+      if (!bubble) return;
+      bubble.classList.remove('opacity-0', 'scale-90');
+      bubble.classList.add('opacity-100', 'scale-100');
+      if (bubbleTimers[slotIdx]) {
+        clearTimeout(bubbleTimers[slotIdx]);
+        bubbleTimers[slotIdx] = null;
+      }
+      if (autoHideMs > 0) {
+        bubbleTimers[slotIdx] = setTimeout(() => {
+          hideSliderBubble(slotIdx);
+        }, autoHideMs);
+      }
+    }
+
+    function hideSliderBubble(slotIdx) {
+      const bubble = document.getElementById(`slider-bubble-${slotIdx}`);
+      if (!bubble) return;
+      bubble.classList.remove('opacity-100', 'scale-100');
+      bubble.classList.add('opacity-0', 'scale-90');
+    }
+
+    function changeEffort(slotIndex, effortIndex, isFastInput = false) {
+      const model = getModelById(slots[slotIndex]);
+      if (!model || model.fixedEffort || !model.efforts || model.efforts.length <= 1) return;
+      const maxIdx = model.efforts.length - 1;
+      const nextIdx = Math.max(0, Math.min(maxIdx, Number(effortIndex)));
+      if (isFastInput) {
+        showSliderBubble(slotIndex);
+      }
+      if (slotEffortIdx[slotIndex] === nextIdx) return;
+      slotEffortIdx[slotIndex] = nextIdx;
+      const inputEl = document.getElementById(`slider-input-${slotIndex}`);
+      if (inputEl && Number(inputEl.value) !== nextIdx) {
+        inputEl.value = nextIdx;
+      }
+      if (updateSliderAndMetricsInPlace(slotIndex)) {
+        return;
+      }
+      renderAll(true);
+    }
+
+    function jumpToEffort(slotIndex, effortIndex, e) {
+      if (e) e.stopPropagation();
+      const model = getModelById(slots[slotIndex]);
+      if (!model || model.fixedEffort || !model.efforts || model.efforts.length <= 1) return;
+      const maxIdx = model.efforts.length - 1;
+      const nextIdx = Math.max(0, Math.min(maxIdx, Number(effortIndex)));
+      slotEffortIdx[slotIndex] = nextIdx;
+      const inputEl = document.getElementById(`slider-input-${slotIndex}`);
+      if (inputEl) {
+        inputEl.value = nextIdx;
+        inputEl.focus({ preventScroll: true });
+      }
+      if (!updateSliderAndMetricsInPlace(slotIndex)) {
+        renderAll(true);
+      }
+      showSliderBubble(slotIndex, 950);
+    }
+
+    function handleSliderKeydown(e, slotIndex) {
+      const model = getModelById(slots[slotIndex]);
+      if (!model || model.fixedEffort || !model.efforts || model.efforts.length <= 1) return;
+      const cur = slotEffortIdx[slotIndex] ?? 0;
+      const maxIdx = model.efforts.length - 1;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (cur > 0) {
+          changeEffort(slotIndex, cur - 1, false);
+        }
+        showSliderBubble(slotIndex, 1000);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (cur < maxIdx) {
+          changeEffort(slotIndex, cur + 1, false);
+        }
+        showSliderBubble(slotIndex, 1000);
+      }
+    }
+
+    function clearSlot(slotIndex, e) {
+      if (e) e.stopPropagation();
+      if (slotIndex === 1 && slots[2]) {
+        // 删除第2栏时若第3栏有模型，自动前移补位并复位右栏切换状态
+        slots[1] = slots[2];
+        slotEffortIdx[1] = slotEffortIdx[2];
+        slots[2] = null;
+        slotEffortIdx[2] = 0;
+      } else {
+        slots[slotIndex] = null;
+      }
+      mobileRightSlot = 1;
+      renderAll();
+    }
+
+    function toggleMobileRightSlot(targetSlot) {
+      mobileRightSlot = targetSlot;
+      renderAll();
+    }
+
+    // ==================== 渲染顶部控制栏与底部说明 ====================
+    function updateHeaderUI() {
+      const tabR = document.getElementById('tabReasoning');
+      const tabI = document.getElementById('tabImage');
+      if (currentBoard === 'reasoning') {
+        tabR.className = 'px-2.5 sm:px-3.5 py-1 rounded-[9px] text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 bg-sky-500/20 text-sky-300 border border-sky-400/30 shadow-sm';
+        tabI.className = 'px-2.5 sm:px-3.5 py-1 rounded-[9px] text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 text-slate-400 hover:text-slate-200 border border-transparent';
+      } else {
+        tabI.className = 'px-2.5 sm:px-3.5 py-1 rounded-[9px] text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 bg-pink-500/20 text-pink-300 border border-pink-400/30 shadow-sm';
+        tabR.className = 'px-2.5 sm:px-3.5 py-1 rounded-[9px] text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 text-slate-400 hover:text-slate-200 border border-transparent';
+      }
+
+      // 评测基准下拉
+      const benchSelect = document.getElementById('benchmarkSelect');
+      const list = BENCHMARK_SOURCES[currentBoard];
+      benchSelect.innerHTML = list.map(b => `<option value="${b.id}" class="bg-slate-900 text-white" ${b.id === currentBenchmarkId ? 'selected' : ''}>${b.name}</option>`).join('');
+
+      // 预设胶囊
+      const presetBar = document.getElementById('presetBar');
+      presetBar.innerHTML = PRESETS[currentBoard].map((p, idx) => `
+        <button onclick="applyPreset(${idx})" class="px-2 py-0.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-[10px] sm:text-[11px] text-slate-300 hover:text-white transition whitespace-nowrap">
+          ${p.label}
+        </button>
+      `).join('');
+
+      // 底部数据来源与提示语跟随当前榜单切换
+      const footerSourceEl = document.getElementById('footerSourceText');
+      const footerTipEl = document.getElementById('footerTipText');
+      if (footerSourceEl && footerTipEl) {
+        if (currentBoard === 'reasoning') {
+          footerSourceEl.textContent = '数据来源：LMArena (arena.ai)、LiveBench、Artificial Analysis v5.0、GPQA、SWE-bench、ARC-AGI-2 · 截至 2026年10月31日';
+          footerTipEl.textContent = '| 拖动滑块或点击推理强度档位可实时重算得分与领先方';
+        } else {
+          footerSourceEl.textContent = '数据来源：LMArena 文生图与图像编辑竞技场 (arena.ai)、DPG-Bench、中英文字排版盲测基准 · 截至 2026年10月31日';
+          footerTipEl.textContent = '| 拖动滑块或点击生成档位可实时重算 Arena Elo 与各项得分';
+        }
+      }
+    }
+
+    function renderMobileSlotControl() {
+      const ctrl = document.getElementById('mobileSlotControl');
+      const desktopBadge = document.getElementById('desktopSlotBadge');
+      const filledCount = slots.filter(Boolean).length;
+
+      if (desktopBadge) {
+        desktopBadge.textContent = `对比槽位 ${filledCount}/3`;
+      }
+
+      // 若第3槽位为空且当前处于右栏③，自动复位到右栏②
+      if (!slots[2] && mobileRightSlot === 2) {
+        mobileRightSlot = 1;
+      }
+
+      const nextEmptySlot = !slots[1] ? 1 : 2;
+
+      if (!slots[2]) {
+        ctrl.innerHTML = `
+          <span class="px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-[10px] sm:text-[11px] font-mono-num font-bold text-slate-300">${filledCount}/3</span>
+          <button onclick="openPicker(${nextEmptySlot})" class="px-2.5 py-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-[11px] sm:text-xs font-bold text-sky-200 flex items-center gap-1 whitespace-nowrap shadow-sm active:scale-95 transition">
+            <span class="text-sm leading-none">+</span><span>再选一个</span>
+          </button>
+        `;
+      } else {
+        ctrl.innerHTML = `
+          <span class="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-400/35 text-[10px] sm:text-[11px] font-mono-num font-extrabold text-emerald-300 shadow-sm">3/3</span>
+          <div class="inline-flex p-0.5 rounded-xl bg-slate-900/95 border border-sky-400/35 shadow-md">
+            <button onclick="toggleMobileRightSlot(1)" class="px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${mobileRightSlot === 1 ? 'bg-sky-400 text-slate-950 shadow-[0_0_10px_rgba(56,189,248,0.5)]' : 'text-slate-300 hover:text-white'}">右栏②</button>
+            <button onclick="toggleMobileRightSlot(2)" class="px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${mobileRightSlot === 2 ? 'bg-sky-400 text-slate-950 shadow-[0_0_10px_rgba(56,189,248,0.5)]' : 'text-slate-300 hover:text-white'}">右栏③</button>
+          </div>
+        `;
+      }
+    }
+
+    // ==================== 计算叠加评测来源偏移后的展示分数 ====================
+    function getEffectiveData(model, effortIdx) {
+      if (!model || model.unavailable) return null;
+      const eff = model.efforts[Math.min(effortIdx, model.efforts.length - 1)] || model.efforts[0];
+      const benchObj = BENCHMARK_SOURCES[currentBoard].find(b => b.id === currentBenchmarkId) || BENCHMARK_SOURCES[currentBoard][0];
+
+      const adjustedScores = eff.scores.map((s, idx) => {
+        const off = benchObj.offsets[idx] || 0;
+        return Math.min(99.9, Math.max(50.0, +(s + off).toFixed(1)));
+      });
+
+      let adjustedElo = null;
+      if (currentBoard === 'image' && typeof eff.elo === 'number') {
+        adjustedElo = Math.round(eff.elo + (benchObj.eloOffset || 0));
+      }
+
+      return {
+        effort: eff,
+        scores: adjustedScores,
+        elo: adjustedElo
+      };
+    }
+
+    function buildStepButtonsHTML(efforts, slotIdx, currentEffIdx, isFixed, vendorColor) {
+      const total = efforts.length;
+      if (!isFixed && total > 1) {
+        return `
+          <div class="grid gap-1 mt-0.5" style="grid-template-columns: repeat(${total}, minmax(0, 1fr));">
+            ${efforts.map((item, idx) => {
+              const shortText = item.label.split(' ')[0].replace('思考模式', '思考');
+              const isCurrent = idx === currentEffIdx;
+              return `
+                <button type="button"
+                        onclick="jumpToEffort(${slotIdx}, ${idx}, event)"
+                        title="点击切换至 ${item.label}"
+                        class="px-1 py-0.5 rounded-md text-[11px] sm:text-xs font-mono-num leading-tight truncate transition-all cursor-pointer border ${isCurrent ? 'text-white font-extrabold bg-white/[0.15] border-white/35 shadow-sm' : 'text-slate-200/90 hover:text-white font-medium bg-white/[0.04] hover:bg-white/[0.10] border-white/[0.08]'}"
+                        style="${isCurrent ? `border-color:${vendorColor}; box-shadow: 0 0 8px ${vendorColor}44;` : ''}">
+                  ${shortText}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+      return `
+        <div class="flex items-center justify-between text-[11px] sm:text-xs text-slate-300 font-mono-num leading-tight mt-0.5 px-1 py-0.5 rounded-md bg-white/[0.03] border border-white/[0.06]">
+          <span>不支持调节强度</span>
+          <span class="text-white font-bold">固定档位</span>
+        </div>
+      `;
+    }
+
+    // ==================== 构建分档吸附滑块 HTML ====================
+    function buildEffortSliderHTML(model, slotIdx, currentEffIdx, vendorColor) {
+      const efforts = model.efforts || [];
+      const total = efforts.length;
+      const eff = efforts[Math.min(currentEffIdx, total - 1)] || efforts[0];
+      const isFixed = model.fixedEffort || total <= 1;
+      const pct = total > 1 ? ((currentEffIdx / (total - 1)) * 100).toFixed(1) : 100;
+      const bubbleLeft = isFixed ? '50%' : `calc(${pct}% + (${14 - Number(pct) * 0.28}px))`;
+
+      // 生成刻度圆点
+      let ticksHTML = '';
+      if (total > 1) {
+        for (let i = 0; i < total; i++) {
+          const active = i <= currentEffIdx;
+          const isCurrent = i === currentEffIdx;
+          ticksHTML += `
+            <span class="w-2 h-2 rounded-full transition-all duration-150 ${isCurrent ? 'scale-125' : ''}"
+                  style="background:${active ? '#ffffff' : 'rgba(148,163,184,0.45)'}; box-shadow:${isCurrent ? `0 0 6px ${vendorColor}` : 'none'}"></span>
+          `;
+        }
+      }
+
+      const stepButtonsHTML = buildStepButtonsHTML(efforts, slotIdx, currentEffIdx, isFixed, vendorColor);
+
+      return `
+        <div class="mt-1 px-2 py-1 rounded-xl bg-slate-950/75 border border-white/[0.08]"
+             style="--thumb-color: ${vendorColor}; --thumb-glow: ${vendorColor}aa;">
+          <!-- 顶部：标题 + 当前吸附档位名称 + 实测/估计标记 -->
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-[11px] sm:text-xs text-slate-300 font-semibold shrink-0">
+              ${currentBoard === 'reasoning' ? '推理强度' : '生成档位'}
+            </span>
+            <div class="flex items-center gap-1 min-w-0">
+              <span id="slider-label-${slotIdx}" class="text-[11px] sm:text-xs font-mono-num font-extrabold truncate px-1.5 py-0.5 rounded bg-white/[0.08] text-white border border-white/15">
+                ${isFixed ? '固定' : eff.label}
+              </span>
+              <span id="slider-est-${slotIdx}" class="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${eff.est ? 'bg-amber-500/20 text-amber-300 border border-amber-400/35' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/35'}">
+                ${eff.est ? '估计' : '实测'}
+              </span>
+            </div>
+          </div>
+
+          <!-- 中间：至少 44px 高触控区域 + 10-12px 加粗轨道 + 28-30px 大圆点 + 顶部拖动气泡 -->
+          <div class="relative flex items-center h-11 min-h-[44px] select-none">
+            <!-- 拖动时圆点上方实时气泡 -->
+            <div id="slider-bubble-${slotIdx}"
+                 class="pointer-events-none absolute -top-6 -translate-x-1/2 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-mono-num font-extrabold text-slate-950 shadow-lg whitespace-nowrap opacity-0 scale-90 transition-all duration-150 z-30"
+                 style="left: ${bubbleLeft}; background: ${vendorColor};">
+              <span id="slider-bubble-text-${slotIdx}">${isFixed ? '固定' : eff.label}</span>
+              <span class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 rotate-45" style="background: ${vendorColor};"></span>
+            </div>
+
+            <!-- 轨道底色 (10px-12px 粗轨道) -->
+            <div class="w-full h-2.5 sm:h-3 bg-slate-800/95 rounded-full overflow-hidden border border-white/10 shadow-inner">
+              <div id="slider-fill-${slotIdx}" class="h-full transition-all duration-150 rounded-full"
+                   style="width:${isFixed ? '100' : pct}%; background:${isFixed ? 'rgba(100,116,139,0.45)' : vendorColor}"></div>
+            </div>
+
+            <!-- 刻度吸附点 -->
+            ${!isFixed && total > 1 ? `<div id="slider-ticks-${slotIdx}" class="absolute inset-x-3 flex items-center justify-between pointer-events-none z-10">${ticksHTML}</div>` : ''}
+
+            <!-- 原生 Range 控件（44px 高度、支持手指滑动、鼠标拖动与键盘左右方向键） -->
+            <input id="slider-input-${slotIdx}"
+                   type="range"
+                   min="0"
+                   max="${Math.max(1, total - 1)}"
+                   step="1"
+                   value="${isFixed ? 0 : currentEffIdx}"
+                   ${isFixed ? 'disabled' : ''}
+                   aria-label="${model.name} ${currentBoard === 'reasoning' ? '推理强度' : '生成档位'}"
+                   onpointerdown="showSliderBubble(${slotIdx})"
+                   onpointerup="hideSliderBubble(${slotIdx})"
+                   onpointercancel="hideSliderBubble(${slotIdx})"
+                   ontouchstart="showSliderBubble(${slotIdx})"
+                   ontouchend="hideSliderBubble(${slotIdx})"
+                   onmouseleave="hideSliderBubble(${slotIdx})"
+                   onblur="hideSliderBubble(${slotIdx})"
+                   onkeydown="handleSliderKeydown(event, ${slotIdx})"
+                   oninput="changeEffort(${slotIdx}, this.value, true)"
+                   class="effort-range absolute inset-0 w-full h-full" />
+          </div>
+
+          <!-- 底部：可点击跳档的高对比度档位按钮 (11-12px) -->
+          <div id="slider-steps-${slotIdx}">${stepButtonsHTML}</div>
+        </div>
+      `;
+    }
+
+    function updateSliderAndMetricsInPlace(changedSlotIdx) {
+      const model = getModelById(slots[changedSlotIdx]);
+      if (!model || model.unavailable) return false;
+      const vendor = VENDORS[model.vendor];
+      const efforts = model.efforts || [];
+      const total = efforts.length;
+      const currentEffIdx = Math.min(slotEffortIdx[changedSlotIdx], Math.max(0, total - 1));
+      const eff = efforts[currentEffIdx] || efforts[0];
+      const isFixed = model.fixedEffort || total <= 1;
+      const pct = total > 1 ? ((currentEffIdx / (total - 1)) * 100).toFixed(1) : 100;
+      const bubbleLeft = isFixed ? '50%' : `calc(${pct}% + (${14 - Number(pct) * 0.28}px))`;
+
+      const labelEl = document.getElementById(`slider-label-${changedSlotIdx}`);
+      const estEl = document.getElementById(`slider-est-${changedSlotIdx}`);
+      const fillEl = document.getElementById(`slider-fill-${changedSlotIdx}`);
+      const ticksEl = document.getElementById(`slider-ticks-${changedSlotIdx}`);
+      const stepsEl = document.getElementById(`slider-steps-${changedSlotIdx}`);
+      const bubbleEl = document.getElementById(`slider-bubble-${changedSlotIdx}`);
+      const bubbleTextEl = document.getElementById(`slider-bubble-text-${changedSlotIdx}`);
+      if (!labelEl || !estEl || !fillEl) return false;
+
+      labelEl.textContent = isFixed ? '固定' : eff.label;
+      estEl.textContent = eff.est ? '估计' : '实测';
+      estEl.className = `text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${eff.est ? 'bg-amber-500/20 text-amber-300 border border-amber-400/35' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/35'}`;
+      fillEl.style.width = `${isFixed ? '100' : pct}%`;
+
+      if (bubbleEl && bubbleTextEl) {
+        bubbleEl.style.left = bubbleLeft;
+        bubbleTextEl.textContent = isFixed ? '固定' : eff.label;
+      }
+
+      if (ticksEl && total > 1) {
+        let ticksHTML = '';
+        for (let i = 0; i < total; i++) {
+          const active = i <= currentEffIdx;
+          const isCurrent = i === currentEffIdx;
+          ticksHTML += `<span class="w-2 h-2 rounded-full transition-all duration-150 ${isCurrent ? 'scale-125' : ''}" style="background:${active ? '#ffffff' : 'rgba(148,163,184,0.45)'}; box-shadow:${isCurrent ? `0 0 6px ${vendor.color}` : 'none'}"></span>`;
+        }
+        ticksEl.innerHTML = ticksHTML;
+      }
+
+      if (stepsEl) {
+        stepsEl.innerHTML = buildStepButtonsHTML(efforts, changedSlotIdx, currentEffIdx, isFixed, vendor.color);
+      }
+
+      // 实时重算并同步所有可见卡片的指标与「★ 本组领先」徽章
+      const effectiveList = slots.map((id, idx) => {
+        const m = getModelById(id);
+        return getEffectiveData(m, slotEffortIdx[idx]);
+      });
+      const isDesktop = window.innerWidth >= 1024;
+      const visibleSlotIndices = isDesktop ? [0, 1, 2] : [0, mobileRightSlot];
+      const metricLabels = currentBoard === 'reasoning'
+        ? [
+            { name: '综合智力指数', short: '综合智力', unit: '' },
+            { name: '深度推理与数学', short: '推理与数学', unit: '' },
+            { name: '编程与 Agent 工程', short: '编程与Agent', unit: '' },
+            { name: '知识广度与多模态', short: '知识与多模态', unit: '' }
+          ]
+        : [
+            { name: '视觉美学与真实感', short: '美学与真实感', unit: '' },
+            { name: '复杂指令与多图一致性', short: '指令与一致性', unit: '' },
+            { name: '文字排版渲染 (中/英)', short: '中英文字排版', unit: '' }
+          ];
+      const maxScores = metricLabels.map((_, mIdx) => {
+        let maxVal = -1;
+        visibleSlotIndices.forEach(sIdx => {
+          const data = effectiveList[sIdx];
+          if (data && data.scores && typeof data.scores[mIdx] === 'number') {
+            if (data.scores[mIdx] > maxVal) maxVal = data.scores[mIdx];
+          }
+        });
+        return maxVal;
+      });
+      let maxElo = -1;
+      if (currentBoard === 'image') {
+        visibleSlotIndices.forEach(sIdx => {
+          const data = effectiveList[sIdx];
+          if (data && typeof data.elo === 'number' && data.elo > maxElo) {
+            maxElo = data.elo;
+          }
+        });
+      }
+      const activeModelCount = visibleSlotIndices.filter(sIdx => effectiveList[sIdx] !== null).length;
+
+      [0, 1, 2].forEach(sIdx => {
+        const m = getModelById(slots[sIdx]);
+        const effData = effectiveList[sIdx];
+        const container = document.getElementById(`slot-metrics-${sIdx}`);
+        if (!m || m.unavailable || !effData || !container) return;
+        const v = VENDORS[m.vendor];
+        container.innerHTML = buildMetricsHTML(m, v, effData, metricLabels, maxScores, maxElo, activeModelCount, true);
+      });
+      return true;
+    }
+
+    function buildMetricsHTML(model, vendor, effData, metricLabels, maxScores, maxElo, activeModelCount, skipAnim) {
+      const anim2 = skipAnim ? '' : 'anim-row-2';
+      const anim3 = skipAnim ? '' : 'anim-row-3';
+      const anim4 = skipAnim ? '' : 'anim-row-4';
+      const anim5 = skipAnim ? '' : 'anim-row-5';
+
+      return `
+        ${currentBoard === 'image' ? `
+          <!-- 生图榜专属首行：Arena Elo 分数 + 误差与评测票数 -->
+          <div class="py-0.5 sm:py-1 ${anim2}">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[10px] sm:text-xs font-medium text-slate-300 truncate">Arena 盲测 Elo</span>
+              ${activeModelCount > 1 && effData.elo === maxElo ? `<span class="lead-pill px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wide shrink-0">★ 本组领先</span>` : ''}
+            </div>
+            <div class="flex items-baseline justify-between gap-1 mt-0.5">
+              <div class="flex items-baseline gap-1">
+                <span class="text-base sm:text-xl lg:text-2xl font-extrabold font-mono-num text-white tracking-tight">${effData.elo}</span>
+                <span class="text-[10px] sm:text-[11px] font-mono-num text-slate-400">${model.ci}</span>
+              </div>
+              <span class="text-[9px] sm:text-[10px] font-mono-num text-slate-400 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/5">${model.votes} 票</span>
+            </div>
+            <div class="w-full h-1 sm:h-1.5 bg-slate-800/90 rounded-full overflow-hidden mt-0.5">
+              <div class="h-full rounded-full bar-fill" style="width:${Math.min(100, Math.max(15, ((effData.elo - 950) / 520) * 100)).toFixed(1)}%; background:${vendor.barGrad}"></div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${metricLabels.map((mMeta, mIdx) => {
+          const val = effData.scores[mIdx];
+          const isLeader = activeModelCount > 1 && val === maxScores[mIdx];
+          const animClass = [anim2, anim3, anim4, anim5][mIdx] || anim5;
+          return `
+            <div class="py-0.5 sm:py-1 ${animClass}">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[10px] sm:text-xs font-medium text-slate-300 truncate">
+                  <span class="sm:hidden">${mMeta.short}</span>
+                  <span class="hidden sm:inline">${mMeta.name}</span>
+                </span>
+                ${isLeader ? `<span class="lead-pill px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wide shrink-0">★ 本组领先</span>` : ''}
+              </div>
+              <div class="flex items-baseline justify-between mt-0.5">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-base sm:text-xl lg:text-2xl font-extrabold font-mono-num tracking-tight ${isLeader ? 'text-white' : 'text-slate-200'}">${val.toFixed(1)}</span>
+                  <span class="text-[10px] text-slate-500 font-mono-num">/100</span>
+                </div>
+                <span class="text-[9px] sm:text-[10px] text-slate-400 font-mono-num">${val >= 97 ? 'S+ 殿堂级' : val >= 94 ? 'S 旗舰级' : val >= 90 ? 'A+ 优秀' : 'A 良好'}</span>
+              </div>
+              <div class="w-full h-1 sm:h-1.5 bg-slate-800/90 rounded-full overflow-hidden mt-0.5">
+                <div class="h-full rounded-full bar-fill" style="width:${val}%; background:${vendor.barGrad}"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      `;
+    }
+
+    // ==================== 渲染主对比卡片网格 ====================
+    function renderAll(skipAnim = false) {
+      renderMobileSlotControl();
+      const grid = document.getElementById('compareGrid');
+      const filledCount = slots.filter(Boolean).length;
+
+      const effectiveList = slots.map((id, idx) => {
+        const m = getModelById(id);
+        return getEffectiveData(m, slotEffortIdx[idx]);
+      });
+
+      const isDesktop = window.innerWidth >= 1024;
+      const visibleSlotIndices = isDesktop ? [0, 1, 2] : [0, mobileRightSlot];
+
+      const metricLabels = currentBoard === 'reasoning'
+        ? [
+            { name: '综合智力指数', short: '综合智力', unit: '' },
+            { name: '深度推理与数学', short: '推理与数学', unit: '' },
+            { name: '编程与 Agent 工程', short: '编程与Agent', unit: '' },
+            { name: '知识广度与多模态', short: '知识与多模态', unit: '' }
+          ]
+        : [
+            { name: '视觉美学与真实感', short: '美学与真实感', unit: '' },
+            { name: '复杂指令与多图一致性', short: '指令与一致性', unit: '' },
+            { name: '文字排版渲染 (中/英)', short: '中英文字排版', unit: '' }
+          ];
+
+      // 计算每个维度上的最高分（用于标注「★ 本组领先」）
+      const maxScores = metricLabels.map((_, mIdx) => {
+        let maxVal = -1;
+        visibleSlotIndices.forEach(sIdx => {
+          const data = effectiveList[sIdx];
+          if (data && data.scores && typeof data.scores[mIdx] === 'number') {
+            if (data.scores[mIdx] > maxVal) maxVal = data.scores[mIdx];
+          }
+        });
+        return maxVal;
+      });
+
+      let maxElo = -1;
+      if (currentBoard === 'image') {
+        visibleSlotIndices.forEach(sIdx => {
+          const data = effectiveList[sIdx];
+          if (data && typeof data.elo === 'number' && data.elo > maxElo) {
+            maxElo = data.elo;
+          }
+        });
+      }
+
+      const activeModelCount = visibleSlotIndices.filter(sIdx => effectiveList[sIdx] !== null).length;
+      const slotCircleLabels = ['①', '②', '③'];
+
+      grid.innerHTML = [0, 1, 2].map(slotIdx => {
+        const isVisibleOnMobile = slotIdx === 0 || slotIdx === mobileRightSlot;
+        const visibilityClass = isVisibleOnMobile ? 'flex' : 'hidden lg:flex';
+        const model = getModelById(slots[slotIdx]);
+
+        // 空槽位：「+ 再选一个模型」
+        if (!model) {
+          return `
+            <div onclick="openPicker(${slotIdx})" class="${visibilityClass} glass-empty rounded-2xl p-4 flex-col items-center justify-center text-center cursor-pointer group h-full min-h-0">
+              <div class="px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-[10px] font-mono-num text-slate-400 mb-2">
+                槽位 ${slotIdx + 1}/3 · 空闲
+              </div>
+              <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.04] group-hover:bg-sky-500/20 border border-white/10 group-hover:border-sky-400/40 flex items-center justify-center text-2xl sm:text-3xl text-slate-300 group-hover:text-sky-300 transition-all shadow-inner mb-2.5">
+                +
+              </div>
+              <div class="text-sm sm:text-base font-bold text-slate-200 group-hover:text-white">再选一个模型</div>
+              <p class="text-[11px] sm:text-xs text-slate-400 mt-1 max-w-[210px]">
+                从 9 大厂商 ${getModelList().length} 款模型中任选对比，各项能力与${currentBoard === 'reasoning' ? '推理强度' : '生成档位'}滑块逐行对齐
+              </p>
+              <span class="mt-3 px-3 py-1 rounded-full text-[11px] font-medium bg-white/[0.05] text-sky-300 border border-sky-500/20 group-hover:bg-sky-500/20 transition">
+                点击打开模型库 ▾
+              </span>
+            </div>
+          `;
+        }
+
+        const vendor = VENDORS[model.vendor];
+        const effData = effectiveList[slotIdx];
+        const currentEffIdx = Math.min(slotEffortIdx[slotIdx], (model.efforts ? model.efforts.length - 1 : 0));
+
+        const statusStyle = model.status === '现役'
+          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+          : model.status === '初步成绩'
+          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+          : model.status === '开源'
+          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+          : model.status === '已退役'
+          ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+          : 'bg-slate-700/40 text-slate-300 border-slate-600/40';
+
+        const anim1 = skipAnim ? '' : 'anim-row-1';
+
+        // 暂无生图能力的模型展示
+        if (model.unavailable) {
+          return `
+            <div class="${visibilityClass} glass-panel rounded-2xl p-2 sm:p-3.5 flex-col justify-between h-full min-h-0 relative overflow-hidden" style="border-top: 2px solid ${vendor.color}">
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openPicker(${slotIdx})" class="flex-1 min-w-0 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 flex items-center justify-between gap-1 text-left transition">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="px-1.5 py-0.2 rounded bg-white/10 text-[10px] font-mono-num font-bold text-sky-300 shrink-0">${slotIdx + 1}/${filledCount}</span>
+                      <span class="text-xs sm:text-sm font-semibold text-white truncate">${model.name}</span>
+                    </div>
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  ${slotIdx > 0 ? `<button onclick="clearSlot(${slotIdx}, event)" title="移除此栏" class="w-7 h-7 rounded-xl bg-white/[0.04] hover:bg-rose-500/20 border border-white/10 hover:border-rose-400/40 text-slate-400 hover:text-rose-300 flex items-center justify-center text-xs shrink-0 transition">✕</button>` : ''}
+                </div>
+
+                <div class="mt-2 flex items-center justify-between gap-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold" style="background:${vendor.badgeBg}; color:${vendor.color}; border:1px solid ${vendor.badgeBorder}">
+                    ${vendor.svg}<span>${vendor.name} · ${vendor.sub}</span>
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusStyle}">${model.status}</span>
+                </div>
+
+                <h2 class="text-sm sm:text-lg font-extrabold text-white mt-1.5 leading-snug">${model.name}</h2>
+              </div>
+
+              <div class="my-auto py-4 text-center border-y border-white/[0.06]">
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-500 tracking-wider">暂无官方生图模型</div>
+                <p class="text-[11px] sm:text-xs text-slate-400 mt-1.5 leading-relaxed px-2">${model.highlight}</p>
+              </div>
+
+              <div class="text-[10px] text-slate-500 text-center">
+                可点击顶部切换至「🧠 推理与通用」查看该厂商旗舰模型表现
+              </div>
+            </div>
+          `;
+        }
+
+        // 正常模型卡片
+        return `
+          <div class="${visibilityClass} glass-panel rounded-2xl p-2 sm:p-3.5 flex-col justify-between h-full min-h-0 relative overflow-hidden" style="border-top: 2px solid ${vendor.color}">
+            <!-- 1. 顶部：选择器 + 厂商身份 + 模型名 + 分档推理强度滑块 -->
+            <div class="${anim1} shrink-0">
+              <!-- 模型切换按钮行（带 1/3、2/3、3/3 槽位标识） -->
+              <div class="flex items-center gap-1.5">
+                <button onclick="openPicker(${slotIdx})" class="flex-1 min-w-0 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 flex items-center justify-between gap-1 text-left transition group">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="px-1.5 py-0.2 rounded bg-white/[0.09] text-[10px] font-mono-num font-bold text-sky-300 shrink-0">${slotCircleLabels[slotIdx]} ${slotIdx + 1}/3</span>
+                    <span class="w-2 h-2 rounded-full shrink-0" style="background:${vendor.color}"></span>
+                    <span class="text-[11px] sm:text-xs font-semibold text-slate-200 group-hover:text-white truncate">切换模型 (${getModelList().length}款)</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                ${slotIdx > 0 ? `<button onclick="clearSlot(${slotIdx}, event)" title="清空此栏" class="w-7 h-7 rounded-xl bg-white/[0.04] hover:bg-rose-500/20 border border-white/10 hover:border-rose-400/40 text-slate-400 hover:text-rose-300 flex items-center justify-center text-xs shrink-0 transition">✕</button>` : ''}
+              </div>
+
+              <!-- 厂商徽章 + 状态标签 -->
+              <div class="mt-1 flex items-center justify-between gap-1 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold" style="background:${vendor.badgeBg}; color:${vendor.color}; border:1px solid ${vendor.badgeBorder}">
+                  ${vendor.svg}
+                  <span class="truncate">${vendor.name}</span>
+                  <span class="hidden sm:inline opacity-75">· ${vendor.sub}</span>
+                </span>
+                <div class="flex items-center gap-1">
+                  <span class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-medium border ${statusStyle}">${model.status}</span>
+                  <span class="text-[10px] text-slate-400 font-mono-num hidden sm:inline">${model.release}</span>
+                </div>
+              </div>
+
+              <!-- 模型大字号名称与定位 -->
+              <div class="mt-0.5">
+                <div class="flex items-baseline justify-between gap-1">
+                  <h2 class="text-[13px] sm:text-[16px] lg:text-[17px] font-extrabold text-white leading-tight line-clamp-1">${model.name}</h2>
+                  <span class="text-[9px] sm:text-[10px] text-slate-400 shrink-0 font-mono-num">${currentBoard === 'reasoning' ? model.context + ' 窗口' : model.tier}</span>
+                </div>
+                <p class="hidden sm:block text-[11px] text-slate-400 line-clamp-1 mt-0.5">${model.highlight}</p>
+              </div>
+
+              <!-- 分档吸附滑块（推理强度 / 生成档位） -->
+              ${buildEffortSliderHTML(model, slotIdx, currentEffIdx, vendor.color)}
+            </div>
+
+            <!-- 2. 核心指标行列表（像苹果官网配置表一样逐行对齐） -->
+            <div id="slot-metrics-${slotIdx}" class="flex-1 min-h-0 flex flex-col justify-evenly divide-y divide-white/[0.06] my-0.5 overflow-hidden">
+              ${buildMetricsHTML(model, vendor, effData, metricLabels, maxScores, maxElo, activeModelCount, skipAnim)}
+            </div>
+
+            <!-- 3. 卡片底栏：发布时间与简评 -->
+            <div class="pt-0.5 border-t border-white/[0.06] flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 shrink-0">
+              <span class="truncate">${model.tier}</span>
+              <span class="font-mono-num shrink-0">${model.release}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 厂商横向标签栏滚动与提示控制 ====================
+    function scrollVendorBar(delta) {
+      const bar = document.getElementById('vendorFilterBar');
+      if (!bar) return;
+      bar.scrollBy({ left: delta, behavior: 'smooth' });
+    }
+
+    function updateVendorScrollHints() {
+      const bar = document.getElementById('vendorFilterBar');
+      const leftBtn = document.getElementById('vendorScrollLeftBtn');
+      const rightBtn = document.getElementById('vendorScrollRightBtn');
+      if (!bar || !leftBtn || !rightBtn) return;
+
+      const maxScroll = bar.scrollWidth - bar.clientWidth;
+      if (bar.scrollLeft > 10) {
+        leftBtn.classList.remove('hidden');
+        leftBtn.classList.add('flex');
+      } else {
+        leftBtn.classList.add('hidden');
+        leftBtn.classList.remove('flex');
+      }
+
+      if (maxScroll - bar.scrollLeft > 10) {
+        rightBtn.classList.remove('hidden');
+        rightBtn.classList.add('flex');
+      } else {
+        rightBtn.classList.add('hidden');
+        rightBtn.classList.remove('flex');
+      }
+    }
+
+    // ==================== 模型选择弹窗逻辑（支持分组、筛选与模型名优先搜索） ====================
+    function openPicker(slotIdx) {
+      activePickerSlot = slotIdx;
+      activeVendorFilter = 'ALL';
+      pickerSearchQuery = '';
+      const searchInput = document.getElementById('pickerSearchInput');
+      if (searchInput) searchInput.value = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+
+      const modal = document.getElementById('pickerModal');
+      const title = document.getElementById('modalTitle');
+      const subtitle = document.getElementById('modalSubtitle');
+      title.textContent = `选择第 ${slotIdx + 1} 栏对比模型 · ${currentBoard === 'reasoning' ? '推理与通用榜' : '图片生成榜'} (${getModelList().length}款)`;
+      if (subtitle) {
+        subtitle.textContent = currentBoard === 'reasoning'
+          ? '覆盖 9 大厂商截至 2026.10.31 全系现役旗舰、中端、轻量、推理、编程与开源模型'
+          : '覆盖 9 大厂商截至 2026.10.31 全系现役文生图、多图编辑、中英海报排版与开源视觉模型';
+      }
+      renderPickerContent();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(updateVendorScrollHints, 30);
+    }
+
+    function closePicker() {
+      const modal = document.getElementById('pickerModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function setVendorFilter(vKey) {
+      activeVendorFilter = vKey;
+      renderPickerContent();
+    }
+
+    function handlePickerSearch(val) {
+      pickerSearchQuery = (val || '').trim().toLowerCase();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (pickerSearchQuery) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderPickerContent();
+    }
+
+    function clearPickerSearch() {
+      pickerSearchQuery = '';
+      const searchInput = document.getElementById('pickerSearchInput');
+      if (searchInput) searchInput.value = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderPickerContent();
+    }
+
+    function selectModelForSlot(modelId) {
+      slots[activePickerSlot] = modelId;
+      const m = getModelById(modelId);
+      if (m && m.efforts) {
+        slotEffortIdx[activePickerSlot] = m.defaultEffortIndex ?? 0;
+      }
+      if (activePickerSlot === 2) {
+        mobileRightSlot = 2;
+      }
+      closePicker();
+      renderAll();
+    }
+
+    // 计算搜索匹配优先级得分：模型名称命中 > 厂商/定位命中 > 简介命中
+    function getSearchMatchPriority(m, query) {
+      if (!query) return 1;
+      const v = VENDORS[m.vendor];
+      const nameLower = m.name.toLowerCase();
+      const idLower = m.id.toLowerCase();
+      const tierLower = (m.tier || '').toLowerCase();
+      const statusLower = (m.status || '').toLowerCase();
+      const vendorLower = `${v.name} ${v.sub} ${m.vendor}`.toLowerCase();
+      const highlightLower = (m.highlight || '').toLowerCase();
+
+      if (nameLower === query || idLower === query) return 120;
+      if (nameLower.startsWith(query)) return 110;
+      const nameTokens = nameLower.split(/[\s\-()/]+/);
+      if (nameTokens.some(tok => tok.startsWith(query))) return 100;
+      if (nameLower.includes(query) || idLower.includes(query)) return 85;
+      if (vendorLower.includes(query)) return 60;
+      if (tierLower.includes(query) || statusLower.includes(query)) return 45;
+      if (highlightLower.includes(query) || (m.release || '').toLowerCase().includes(query)) return 15;
+      return 0;
+    }
+
+    function renderPickerContent() {
+      const filterBar = document.getElementById('vendorFilterBar');
+      const listEl = document.getElementById('pickerList');
+      const allModels = getModelList();
+
+      const vendorKeys = ['ALL', 'Google', 'OpenAI', 'Anthropic', 'xAI', 'DeepSeek', 'Qwen', 'Kimi', 'ByteDance', 'Meta'];
+      filterBar.innerHTML = vendorKeys.map(vk => {
+        const isActive = activeVendorFilter === vk;
+        const count = vk === 'ALL' ? allModels.length : allModels.filter(m => m.vendor === vk).length;
+        const label = vk === 'ALL' ? `全部 (${count})` : `${VENDORS[vk].name} (${count})`;
+        return `
+          <button type="button" onclick="setVendorFilter('${vk}')" class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${isActive ? 'bg-sky-500 text-slate-950 shadow-sm' : 'bg-white/[0.06] text-slate-200 hover:bg-white/[0.12]'}">
+            ${label}
+          </button>
+        `;
+      }).join('');
+      setTimeout(updateVendorScrollHints, 10);
+
+      let baseList = activeVendorFilter === 'ALL'
+        ? allModels
+        : allModels.filter(m => m.vendor === activeVendorFilter);
+
+      let scored = baseList.map((m, idx) => ({
+        model: m,
+        origIdx: idx,
+        matchScore: getSearchMatchPriority(m, pickerSearchQuery)
+      })).filter(item => item.matchScore > 0);
+
+      if (scored.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-12 text-center text-slate-400 text-xs">
+            未找到匹配的模型，请尝试其他关键词或切换厂商标签
+          </div>
+        `;
+        return;
+      }
+
+      const renderModelRow = (m, matchScore) => {
+        const v = VENDORS[m.vendor];
+        const isSelected = slots[activePickerSlot] === m.id;
+        const eff = m.efforts ? m.efforts[m.defaultEffortIndex ?? 0] : null;
+        const previewScore = m.unavailable
+          ? '暂无'
+          : currentBoard === 'image'
+          ? `${eff.elo} Elo`
+          : `${eff.scores[0].toFixed(1)} 分`;
+
+        const statusBadge = m.status === '已退役'
+          ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+          : m.status === '初步成绩'
+          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+          : m.status === '开源'
+          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+          : 'bg-white/[0.06] text-slate-300 border-white/10';
+
+        const isNameHit = pickerSearchQuery && matchScore >= 85;
+
+        return `
+          <div onclick="selectModelForSlot('${m.id}')" class="px-3 py-2 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2.5 ${isSelected ? 'bg-sky-500/15 border-sky-400/50' : isNameHit ? 'bg-sky-500/[0.07] hover:bg-sky-500/[0.12] border-sky-400/30' : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/10'}">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold" style="background:${v.badgeBg}; color:${v.color}; border:1px solid ${v.badgeBorder}">
+                  ${v.name}
+                </span>
+                <span class="text-xs sm:text-sm font-bold text-white truncate">${m.name}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded border ${statusBadge}">${m.status}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-white/[0.04] text-slate-300">${m.tier}</span>
+                <span class="text-[10px] text-slate-500 font-mono-num">${m.release}</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate mt-0.5">${m.highlight}</p>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xs sm:text-sm font-extrabold font-mono-num" style="color:${m.unavailable ? '#64748b' : v.color}">${previewScore}</div>
+              <div class="text-[10px] text-slate-400">${m.unavailable ? '不支持' : (m.fixedEffort ? '固定强度' : `${m.efforts.length}档可调`)}</div>
+            </div>
+          </div>
+        `;
+      };
+
+      // 搜索时严格按模型名称匹配优先级排序（如搜 opus 优先展示 Claude Opus 系列）
+      if (pickerSearchQuery) {
+        scored.sort((a, b) => {
+          if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+          return a.origIdx - b.origIdx;
+        });
+        listEl.innerHTML = `
+          <div class="text-[11px] text-sky-300 font-medium px-1 pb-1 flex items-center justify-between">
+            <span>已按「模型名称优先」排序匹配结果 (${scored.length} 款)</span>
+            <span class="text-slate-500 text-[10px]">名称命中排在最前</span>
+          </div>
+          <div class="space-y-1.5">
+            ${scored.map(item => renderModelRow(item.model, item.matchScore)).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      // 未搜索时按厂商分组显示标题
+      const grouped = {};
+      scored.forEach(({ model, matchScore }) => {
+        if (!grouped[model.vendor]) grouped[model.vendor] = [];
+        grouped[model.vendor].push({ model, matchScore });
+      });
+
+      listEl.innerHTML = Object.keys(grouped).map(vKey => {
+        const v = VENDORS[vKey];
+        const groupModels = grouped[vKey];
+        return `
+          <div class="space-y-1">
+            <div class="sticky top-0 z-10 bg-[#0b101d]/95 backdrop-blur py-1 px-1 flex items-center justify-between border-b border-white/5">
+              <div class="flex items-center gap-1.5 text-xs font-bold" style="color:${v.color}">
+                ${v.svg}
+                <span>${v.name} (${v.sub})</span>
+              </div>
+              <span class="text-[10px] text-slate-500 font-mono-num">${groupModels.length} 款模型</span>
+            </div>
+            ${groupModels.map(item => renderModelRow(item.model, item.matchScore)).join('')}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 厂商标签栏支持鼠标滚轮横向滚动
+    document.getElementById('vendorFilterBar').addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        e.currentTarget.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+
+    // 点击背景关闭弹窗
+    document.getElementById('pickerModal').addEventListener('click', (e) => {
+      if (e.target.id === 'pickerModal') closePicker();
+    });
+
+    window.addEventListener('resize', () => {
+      renderAll(true);
+      updateVendorScrollHints();
+    });
+
+    // 初始化启动
+    syncDefaultEfforts();
+    updateHeaderUI();
+    renderAll();
+  </script>
+</body>
+</html>
