@@ -4,7 +4,7 @@
 
 在线访问：https://yuc26331-eng.github.io/ai-model-compare/
 
-页面由 Google Gemini（Canvas）生成，纯前端，直接打开 `index.html` 即可使用。
+页面由 Google Gemini（Canvas）生成，纯静态单文件、无任何外部依赖（Tailwind 已预编译内联，不再加载 CDN），离线直接打开 `index.html` 即可使用；已适配刘海屏与小屏。
 
 ## 许可
 
